@@ -4,7 +4,7 @@ A flash-sale ticketing system for events with limited seats. Buyers race for a s
 
 The system design, architecture diagrams, and design goals are in [docs/README.md](./docs/README.md). Changes are recorded in [docs/CHANGELOG.md](./docs/CHANGELOG.md).
 
-The applications live in separate workspace packages:
+The repository is organized into these packages (built as the project progresses):
 
 ```text
 backend/    Django API, Celery tasks, and tests

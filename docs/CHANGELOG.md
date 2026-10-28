@@ -12,3 +12,4 @@ All notable changes to TicketRush are documented here. The format follows
 - Add the project README, contributor and agent guidelines in `AGENTS.md`, and the repository `.gitignore`.
 - Add the purchase-flow sequence diagram and the PostgreSQL data model diagram.
 - Add the failure-handling table covering every component, its detection signal, automatic response, and recovery.
+- Add `CLAUDE.md` so Claude Code sessions load the agent guidelines.
