@@ -27,6 +27,7 @@ All notable changes to TicketRush are documented here. The format follows
 - Add structured JSON logging with a correlation ID on every line. The ID is returned in the `Correlation-ID` header and carried into Celery tasks.
 - Add the ActivityLog audit trail.
 - Add API request tracking, which stores every write, every error, and every slow request, with secrets redacted.
+- Add the CI workflow: ruff, a missing-migration check, and pytest on PostgreSQL and Redis, plus a Docker image build, for every pull request and push to `main` that touches the backend.
 
 ### Changed
 - Rename the health endpoints to `/system/healthcheck/`, `/system/readiness/`, and `/system/dependencies/` in the design documents and diagrams.
