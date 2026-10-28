@@ -19,12 +19,15 @@ Code must keep these true. A change that weakens one needs a design discussion f
 
 - Tickets are never oversold. Reserve stock with an atomic conditional update in PostgreSQL, never with a read-then-write.
 - A hold is valid only until its `expires_at`. Check expiry wherever a hold is used; do not rely on the sweeper having run.
+- Hold and order transitions are compare-and-set: `UPDATE ... WHERE status = <expected>`. Move stock or write outbox rows only when that update changed a row.
 - Mutating endpoints accept an idempotency key, and a repeated key returns the original result.
 - Jobs triggered by a domain change are written to the outbox in the same transaction as that change.
-- Celery tasks are idempotent and run with `acks_late`. Ticket issuing and email use separate queues.
+- Celery tasks tolerate duplicate delivery and run with `acks_late`. Ticket issuing and email use separate queues. Keep every retry countdown below the Redis `visibility_timeout`, or the broker redelivers the task while it waits.
+- Calls to the payment gateway send `payment.id` as the gateway idempotency key.
 - Webhooks are verified by signature before any processing and deduplicated by provider event ID.
 - Every external call has a timeout. Never widen a failure into a silent success.
 - Every log line carries the request `cid`. Logs are structured JSON.
+- Initialize OpenTelemetry after fork (gunicorn `post_fork`, Celery `worker_process_init`); exporters started before fork lose their spans.
 - Metric labels use route templates and bounded values, never raw paths, user IDs, or other unbounded input. The Grafana Cloud free tier allows 10k active series.
 - Secrets come from environment variables only. Never commit `.env` files, keys, or tokens.
 

@@ -20,6 +20,20 @@ The domain is kept deliberately small. This document covers the backend undernea
 
 ![Infrastructure and deployment](diagrams/infrastructure.drawio.svg)
 
+## Purchase flow
+
+![Purchase flow sequence](diagrams/purchase-sequence.drawio.svg)
+
+## Data model
+
+![Data model](diagrams/data-model.drawio.svg)
+
+`orders` reaches the buyer and the event through its hold, so it stores no copy of `user_id` or `event_id`. The reliability tables have no foreign keys: they record messages and failures, not domain state.
+
+## Failure handling
+
+The expected failure of every component, how it is detected, and how the system responds are listed in [fail-safe.md](fail-safe.md).
+
 The `.drawio.svg` files embed their source, so they open for editing in [draw.io](https://app.diagrams.net). The `.drawio` files next to them hold the same diagrams.
 
 ## Tech stack
@@ -39,7 +53,7 @@ The `.drawio.svg` files embed their source, so they open for editing in [draw.io
 
 ## Design goals
 
-**Never oversell.** Stock is reserved with an atomic conditional update in PostgreSQL. A hold is valid only until its `expires_at`, so an expired hold cannot be paid for even before the sweeper runs.
+**Never oversell.** Stock is reserved with an atomic conditional update in PostgreSQL. A hold is valid only until its `expires_at`, so an expired hold cannot be paid for even before the sweeper runs. Every hold and order transition is a compare-and-set on its current status, so a sweeper, a worker, and a buyer racing on the same hold cannot both move its stock.
 
 **Background work that survives failure.** Domain changes and the jobs they trigger are written in the same transaction through an outbox table, so a Redis outage cannot lose a job. Tasks are idempotent and acknowledged late, so a worker crash causes a retry, not a lost or duplicated ticket. Ticket issuing and email run on separate queues, so a slow email provider cannot delay ticket confirmation.
 
@@ -52,7 +66,7 @@ The `.drawio.svg` files embed their source, so they open for editing in [draw.io
 ## Roadmap
 
 - [x] Architecture and infrastructure diagrams
-- [ ] Purchase-flow sequence diagram, data model, and failure-handling table
+- [x] Purchase-flow sequence diagram, data model, and failure-handling table
 - [ ] Project skeleton deployed to Railway and Vercel
 - [ ] Events, holds, checkout, and the oversell test under concurrency
 - [ ] Celery jobs, outbox, payment webhooks, and ticket issuing
