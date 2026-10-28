@@ -31,6 +31,22 @@ Code must keep these true. A change that weakens one needs a design discussion f
 - Metric labels use route templates and bounded values, never raw paths, user IDs, or other unbounded input. The Grafana Cloud free tier allows 10k active series.
 - Secrets come from environment variables only. Never commit `.env` files, keys, or tokens.
 
+## Backend conventions
+
+The backend follows the team's Django house standard:
+
+- **Layout:** `ticketrush/` is the project package. `ticketrush/settings/` holds `base`, `celery`, `settings`, and `test`. `utils/` and `db/` are shared helpers, and they never import from apps.
+- **Configuration:** settings read values through `configs` (`utils/configs_loader.py`), never `os.environ`. Django reads `DJANGO_`-prefixed variables only. Every value must be listed in `backend/.env.example`; a guard test enforces it.
+- **App files:** each app keeps its logic in `services.py`, and the service owns `transaction.atomic`. Domain errors live in `exceptions.py` as `APIException` subclasses whose `default_code` becomes `status.code`. Views stay thin.
+- **Views:** subclass the base views in `utils/drf_helper/views.py`, never DRF directly. They add the response envelope, request tracking, and response logging. Do not use ViewSets or routers. Paths end with a slash, and probes live under `/system/`.
+- **Envelope:**
+  - Success: `{"status": {"code", "message"}, "data"}`.
+  - Errors: `{"status": {"code", "message"}, "trace"}`.
+  - The cid travels in the `Correlation-ID` header.
+- **Models:** extend `db.models.BaseModel`. The API exposes `uuid` only, never the integer `id`.
+- **Audit:** every state-changing action calls `audit.services.log_action` inside the same transaction as the change.
+- **Style:** ruff with single quotes and line length 150. Tests live in `tests/<app>/` and run on real PostgreSQL.
+
 ## Documentation
 
 - Write repository content in English.

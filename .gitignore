@@ -17,7 +17,7 @@ venv/
 htmlcov/
 coverage.xml
 db.sqlite3
-staticfiles/
+static_root/
 media/
 celerybeat-schedule*
 

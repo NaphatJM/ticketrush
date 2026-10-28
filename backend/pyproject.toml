@@ -1,0 +1,49 @@
+[project]
+name = "ticketrush-backend"
+version = "0.1.0"
+description = "TicketRush API and background workers"
+requires-python = ">=3.13"
+dependencies = [
+    "celery[redis]>=5.6.3",
+    "django>=5.2,<5.3",
+    "django-environ>=0.14.0",
+    "django-guid>=3.6.1",
+    "djangorestframework>=3.18.3",
+    "drf-spectacular[sidecar]>=0.30.0",
+    "psycopg[binary]>=3.3.6",
+    "redis>=6.4.0",
+    "whitenoise>=6.12.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "pytest-django>=4.14.0",
+    "pytest-randomly>=5.0.0",
+    "ruff>=0.17.3",
+]
+prod = [
+    "gunicorn>=26.2.0",
+]
+
+[tool.ruff]
+line-length = 150
+target-version = "py313"
+extend-exclude = ["*/migrations/*.py", "static_root/*"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP", "N", "B", "A", "DJ", "LOG", "ASYNC", "T10", "S", "PLC0415"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106"]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+lines-after-imports = 2
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.pytest.ini_options]
+addopts = "--ds=ticketrush.settings.test --reuse-db --import-mode=importlib -ra"
+python_files = ["test_*.py"]

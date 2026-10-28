@@ -68,7 +68,7 @@
         <mxCell id="d_pay" value="payments&lt;br&gt;adapter · dedupe" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="django">
           <mxGeometry x="300" y="190" width="145" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="d_health" value="/health · /ready" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="django">
+        <mxCell id="d_health" value="/system/healthcheck · /system/readiness" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="django">
           <mxGeometry x="140" y="265" width="145" height="60" as="geometry" />
         </mxCell>
         <mxCell id="d_tickets" value="tickets&lt;br&gt;QR issue · verify" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="django">

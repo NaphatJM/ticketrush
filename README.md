@@ -21,3 +21,32 @@ docs/       System design and diagrams
 ## Stack
 
 Frontend: Next.js on Vercel. Backend: Django + Django REST Framework · Celery + Redis · PostgreSQL on Railway. Payments: mock gateway with fault injection. Observability: OpenTelemetry · Grafana Cloud. Load testing: Locust. CI/CD: GitHub Actions.
+
+## Local development
+
+Requirements: Python 3.13 with [uv](https://docs.astral.sh/uv/), and Docker.
+
+```bash
+docker compose up -d --wait          # PostgreSQL and Redis
+cd backend
+cp .env.example .env
+uv sync
+uv run python manage.py migrate
+uv run python manage.py runserver
+```
+
+| Command (in `backend/`) | Purpose |
+| --- | --- |
+| `uv run pytest` | Run the test suite against the local PostgreSQL and Redis |
+| `uv run ruff check . && uv run ruff format --check .` | Lint and format check |
+| `uv run celery -A ticketrush worker -Q critical,bulk -l info` | Run a Celery worker |
+
+Environment variables are listed in [backend/.env.example](./backend/.env.example). Django reads only `DJANGO_`-prefixed variables.
+
+| Endpoint | Purpose |
+| --- | --- |
+| `/system/healthcheck/` | Liveness; touches no dependency |
+| `/system/readiness/` | Deploy gate; checks PostgreSQL |
+| `/system/dependencies/` | PostgreSQL and Redis status; needs `X-Readiness-Token` or a staff session |
+| `/system/docs/` | OpenAPI documentation |
+| `/staff-admin/` | Django admin for organizers |

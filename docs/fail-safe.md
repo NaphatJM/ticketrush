@@ -13,21 +13,22 @@ How TicketRush behaves when each part of the system fails. Every row is an expec
 
 ## Health endpoints
 
-- `/ready` checks PostgreSQL only. Railway uses it to decide whether a new deployment may receive traffic, so a Redis outage cannot block a deploy or a rollback.
-- `/health/dependencies` checks PostgreSQL, Redis, and the outbox lag. Alerts and the synthetic check use it.
+- `/system/healthcheck/` touches no dependency; it only shows that the process answers.
+- `/system/readiness/` checks PostgreSQL only. Railway uses it to decide whether a new deployment may receive traffic, so a Redis outage cannot block a deploy or a rollback.
+- `/system/dependencies/` checks PostgreSQL, Redis, and the outbox lag. It requires the readiness token because it reveals the topology; alerts and the synthetic check send that token.
 
 ## Failure table
 
 | Component | Failure | Detection | Automatic response | What the buyer sees | Recovery |
 | --- | --- | --- | --- | --- | --- |
 | Next.js BFF (Vercel) | Function error or API unreachable | Vercel logs, synthetic check | API calls use a timeout; the BFF returns a typed error page | "Something went wrong, try again" with the `cid` | Retry is safe because the BFF reuses the same idempotency key |
-| Django API | Process crash or out of memory | 5xx rate alert, `/health/dependencies` | Railway's restart policy restarts the service; a request either committed or did not | Retry returns the original result for the same key | Automatic |
+| Django API | Process crash or out of memory | 5xx rate alert, `/system/dependencies/` | Railway's restart policy restarts the service; a request either committed or did not | Retry returns the original result for the same key | Automatic |
 | Django API | Overload during a sale | p95 latency alert, throttle counter | Per-user and per-IP throttling on holds returns `429` with `Retry-After` | "Too many requests, retrying in N seconds" | Scale web replicas |
 | Django API | Same idempotency key, different body | `422` counter | `422 idempotency_key_reused`; a concurrent duplicate gets `409 in_progress` | Client error, nothing charged twice | Client bug; fix the caller |
-| PostgreSQL | Unavailable | 5xx rate alert, `/health/dependencies` | API returns `503`; no partial writes because each step is one transaction | "Service unavailable, try again" | Railway restores the service; no data repair needed |
+| PostgreSQL | Unavailable | 5xx rate alert, `/system/dependencies/` | API returns `503`; no partial writes because each step is one transaction | "Service unavailable, try again" | Railway restores the service; no data repair needed |
 | PostgreSQL | Connections exhausted | Connection error logs, pool metrics | Connection count is budgeted: gunicorn workers x web replicas + Celery concurrency + beat stays below the server limit | Slow or `503` responses | Lower worker counts or add a pooler |
 | PostgreSQL | Contention on one event row | Hold latency on the dashboard | The conditional `UPDATE ... WHERE available >= q` serializes safely and never oversells | Slower response, never a wrong one | Optimize only after a measured baseline |
-| Redis | Unavailable | `/health/dependencies`, outbox lag alert | New holds are rejected with `503` because their throttle fails closed; checkout of existing holds and webhooks still commit, and their jobs wait in the outbox | "Ticket sales are paused, try again shortly"; buyers who already hold a ticket can still pay | Relay drains the outbox when Redis returns |
+| Redis | Unavailable | `/system/dependencies/`, outbox lag alert | New holds are rejected with `503` because their throttle fails closed; checkout of existing holds and webhooks still commit, and their jobs wait in the outbox | "Ticket sales are paused, try again shortly"; buyers who already hold a ticket can still pay | Relay drains the outbox when Redis returns |
 | Celery beat | Stopped | No beat heartbeat for 2 min, outbox lag alert | The on-commit publish still enqueues new jobs; expired holds are rejected on use but their stock is not returned until the sweeper runs, so the event may show sold out too early | Possible early "sold out" (under-selling, never overselling) | Restart beat (exactly one replica) |
 | Outbox relay | Same row published twice | Duplicate deliveries are counted by the tasks | Tasks are idempotent: the order update matches only `pending_payment`, and tickets are unique on `(order_id, seq)` | Nothing | Automatic |
 | Outbox relay | Row keeps failing to publish | `attempts` reaches 10, dead letter alert | The row moves to dead letters instead of blocking newer rows | Order shows "processing" | Operator fixes the cause and replays the dead letter |
@@ -44,4 +45,4 @@ How TicketRush behaves when each part of the system fails. Every row is an expec
 | Hold sweeper | Buyer abandons the purchase | Expired holds counter | Each hold is expired only if still `active`, its stock is returned in the same transaction, and its pending order becomes `expired` | The hold countdown ends | Automatic |
 | Resend | Unavailable | Retry counter, dead letter alert | Up to 8 retries with backoff capped below the visibility timeout, then a dead letter; the outbox ID is sent as the idempotency key | Ticket is valid and visible in "My tickets" | Replay the dead letter |
 | Grafana Cloud | Unavailable or quota reached | Missing data on dashboards | Telemetry export is asynchronous with bounded buffers; the app keeps serving and drops telemetry instead of blocking | Nothing | Data resumes when export recovers |
-| Deploy | Broken release | Railway health check on `/ready`, then the pipeline smoke test | A release that fails the health check never receives traffic; a smoke-test failure stops the pipeline and alerts | Previous version, or errors until rollback if only the smoke test caught it | Redeploy the previous Railway deployment |
+| Deploy | Broken release | Railway health check on `/system/readiness/`, then the pipeline smoke test | A release that fails the health check never receives traffic; a smoke-test failure stops the pipeline and alerts | Previous version, or errors until rollback if only the smoke test caught it | Redeploy the previous Railway deployment |

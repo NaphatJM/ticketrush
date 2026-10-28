@@ -35,7 +35,7 @@
         <mxCell id="app" value="App services · one Docker image, different start commands" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#ffffff;strokeColor=#7b1fa2;collapsible=0;" vertex="1" parent="railway">
           <mxGeometry x="20" y="45" width="780" height="170" as="geometry" />
         </mxCell>
-        <mxCell id="web" value="&lt;b&gt;web&lt;/b&gt; (public domain)&lt;br&gt;Django + gunicorn&lt;br&gt;healthcheck /ready&lt;br&gt;pre-deploy: migrate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="app">
+        <mxCell id="web" value="&lt;b&gt;web&lt;/b&gt; (public domain)&lt;br&gt;Django + gunicorn&lt;br&gt;healthcheck /system/readiness/&lt;br&gt;pre-deploy: migrate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="app">
           <mxGeometry x="15" y="40" width="225" height="110" as="geometry" />
         </mxCell>
         <mxCell id="wc" value="&lt;b&gt;worker-critical&lt;/b&gt;&lt;br&gt;celery -Q critical&lt;br&gt;acks_late" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="app">
