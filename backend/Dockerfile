@@ -6,9 +6,8 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_PROJECT_ENVIRONMENT=/opt/venv
 
 WORKDIR /app
-RUN --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --frozen --no-install-project --no-dev --group prod
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project --no-dev --group prod
 
 COPY . .
 RUN DJANGO_READ_DOT_ENV_FILE=False DJANGO_DEBUG=True \
