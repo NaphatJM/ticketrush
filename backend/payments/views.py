@@ -1,4 +1,7 @@
 from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema_view
+from drf_spectacular.utils import inline_serializer
+from rest_framework import serializers
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
@@ -6,7 +9,11 @@ from rest_framework.response import Response
 
 from reliability.services import run_idempotent_two_phase
 from ticketing.models import Order
+from ticketing.views import IDEMPOTENCY_ERRORS_DESCRIPTION
 from ticketing.views import IDEMPOTENCY_KEY_PARAMETER
+from ticketing.views import IDEMPOTENT_REPLAYED_HEADER
+from utils.drf_helper.schema import ERROR_RESPONSE
+from utils.drf_helper.schema import wrap_success
 from utils.drf_helper.views import APIView
 from utils.drf_helper.views import ListAPIView
 from utils.drf_helper.views import RetrieveAPIView
@@ -19,7 +26,25 @@ from .serializers import TicketSerializer
 
 
 class CheckoutView(APIView):
-    @extend_schema(request=None, responses={201: OrderSerializer}, parameters=[IDEMPOTENCY_KEY_PARAMETER])
+    @extend_schema(
+        tags=['Orders'],
+        summary='Check out a hold',
+        description='Creates the order for an active hold and starts a payment; open `payment.payment_url` to pay. '
+        'Retrying checkout for the same hold resumes the same order and payment, and after a failed payment it starts a new one. '
+        'Errors: `409 HOLD_NOT_ACTIVE`, `409 HOLD_EXPIRING` (too little time left to pay), `409 ORDER_NOT_PAYABLE`, '
+        '`503 PAYMENTS_UNAVAILABLE` (the gateway failed; the hold is kept, so retry). ' + IDEMPOTENCY_ERRORS_DESCRIPTION,
+        request=None,
+        parameters=[IDEMPOTENCY_KEY_PARAMETER, IDEMPOTENT_REPLAYED_HEADER],
+        responses={
+            201: wrap_success('CheckoutCreated', OrderSerializer()),
+            400: ERROR_RESPONSE,
+            401: ERROR_RESPONSE,
+            404: ERROR_RESPONSE,
+            409: ERROR_RESPONSE,
+            422: ERROR_RESPONSE,
+            503: ERROR_RESPONSE,
+        },
+    )
     def post(self, request: Request, uuid) -> Response:
         def perform(payment):
             payment = services.submit_charge(payment)
@@ -36,6 +61,16 @@ class CheckoutView(APIView):
         return Response(encapsulation_result(result.body), status=result.status_code, headers={'Idempotent-Replayed': str(result.replayed).lower()})
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=['Orders'],
+        summary='Get an order',
+        description='Poll this after paying: the order becomes `paid` once the gateway webhook is processed and the tickets are issued. '
+        '`paid_unfulfilled` means the payment arrived after the stock was gone and an operator must resolve it. '
+        "Another user's order returns `404 NOT_FOUND`.",
+        responses={200: wrap_success('OrderDetail', OrderSerializer()), 401: ERROR_RESPONSE, 404: ERROR_RESPONSE},
+    )
+)
 class OrderDetailView(RetrieveAPIView):
     serializer_class = OrderSerializer
     lookup_field = 'uuid'
@@ -44,6 +79,14 @@ class OrderDetailView(RetrieveAPIView):
         return Order.objects.filter(hold__user=self.request.user).select_related('hold__event')
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=['Tickets'],
+        summary='List my tickets',
+        description='Tickets issued to the caller, newest first. `code` is the value encoded in the QR code sent by email.',
+        responses={200: TicketSerializer(many=True), 401: ERROR_RESPONSE},
+    )
+)
 class MyTicketsView(ListAPIView):
     serializer_class = TicketSerializer
 
@@ -51,13 +94,24 @@ class MyTicketsView(ListAPIView):
         return Ticket.objects.filter(order__hold__user=self.request.user).select_related('order__hold__event').order_by('-issued_at', 'seq')
 
 
+# Authenticated by the provider's signature over the raw body, which is checked before anything is stored.
 class WebhookView(APIView):
-    """Authenticated by the provider's signature over the raw body, which is checked before anything is stored."""
-
     authentication_classes = ()
     permission_classes = (AllowAny,)
 
-    @extend_schema(request=None, responses={200: None})
+    @extend_schema(
+        tags=['Webhooks'],
+        summary='Receive a payment webhook',
+        description='Called by the payment provider, not by clients. The signature header is verified before anything is stored, '
+        'and events are deduplicated by provider event ID, so a redelivered event returns 200 without being applied twice. '
+        'Only providers enabled on the server are accepted; others return `404 NOT_FOUND`.',
+        request=None,
+        responses={
+            200: wrap_success('WebhookReceived', inline_serializer(name='WebhookReceipt', fields={'received': serializers.BooleanField()})),
+            401: ERROR_RESPONSE,
+            404: ERROR_RESPONSE,
+        },
+    )
     def post(self, request: Request, provider: str) -> Response:
         services.receive_webhook(provider=provider, body=request.body, headers=request.headers)
         return Response(encapsulation_result({'received': True}))

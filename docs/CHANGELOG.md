@@ -64,3 +64,4 @@ All notable changes to TicketRush are documented here. The format follows
 
 ### Changed
 - Rename the health endpoints to `/system/healthcheck/`, `/system/readiness/`, and `/system/dependencies/` in the design documents and diagrams.
+- The OpenAPI docs now describe each endpoint with its own summary, description, and tag, declare the `{status, data}` envelope and the paginated list shape that the API actually returns, and list the error responses and the `Idempotent-Replayed` header.

@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from ticketing.models import Order
@@ -24,6 +25,7 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = ('uuid', 'hold', 'event', 'quantity', 'amount_satang', 'status', 'paid_at', 'created_on', 'payment')
         read_only_fields = fields
 
+    @extend_schema_field(PaymentSerializer(allow_null=True))
     def get_payment(self, order: Order) -> dict | None:
         payment = order.payments.order_by('-id').first()
         return PaymentSerializer(payment).data if payment is not None else None

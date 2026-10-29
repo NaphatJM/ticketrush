@@ -6,9 +6,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer as Ba
 from .models import User
 
 
+# `role` and `username` are UI hints only; permissions read `request.user` from the database.
 class TokenObtainPairSerializer(BaseTokenObtainPairSerializer):
-    """`role` and `username` are UI hints only; permissions read `request.user` from the database."""
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Register stores the password untrimmed, so login must compare it untrimmed.
