@@ -10,6 +10,7 @@ from . import views
 
 urlpatterns = [
     path('staff-admin/', admin.site.urls),
+    path('api/', include('accounts.urls')),
     path('api/', include('ticketing.urls')),
     path('api/', include('payments.urls')),
     path('system/healthcheck/', views.healthcheck, name='healthcheck'),

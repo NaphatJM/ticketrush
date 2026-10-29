@@ -8,8 +8,8 @@ from tests.builders import make_event
 from tests.builders import make_user
 from ticketing.models import Event
 from ticketing.models import Hold
-from ticketing.throttles import FailClosedThrottle
 from ticketing.throttles import HoldUserThrottle
+from utils.drf_helper.throttling import FailClosedThrottle
 
 
 pytestmark = pytest.mark.django_db

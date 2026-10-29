@@ -21,7 +21,7 @@ def test_a_row_records_actor_target_and_correlation_id():
     assert row.actor == user
     assert row.actor_username == 'buyer'
     assert row.target_label == 'accounts.User'
-    assert row.target_id == str(user.pk)
+    assert row.target_id == str(user.uuid)
     assert row.cid == 'cid-123'
     assert row.detail == {'role': 'buyer'}
 

@@ -53,3 +53,10 @@ def test_production_settings_refuse_to_boot_with_an_unregistered_payment_gateway
 
     assert result.returncode != 0
     assert "no payment gateway adapter is registered for ['omise']" in result.stderr
+
+
+def test_production_settings_refuse_a_secret_key_too_short_to_sign_jwts():
+    result = _load_settings(PRODUCTION_ENV | {'DJANGO_SECRET_KEY': 'x' * 31})
+
+    assert result.returncode != 0
+    assert 'DJANGO_SECRET_KEY must be at least 32 bytes' in result.stderr

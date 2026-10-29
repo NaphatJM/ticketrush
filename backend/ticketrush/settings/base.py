@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -32,6 +33,9 @@ SECRET_KEY = (
     )
     or 'dev-only-insecure-key'
 )
+
+if len(SECRET_KEY.encode()) < 32 and not DEBUG and not _IS_TEST:
+    raise ImproperlyConfigured('DJANGO_SECRET_KEY must be at least 32 bytes: it is the HS256 key that signs JWTs')
 
 ALLOWED_HOSTS = _required_in_prod(
     'ALLOWED_HOSTS',
@@ -199,17 +203,37 @@ X_FRAME_OPTIONS = 'DENY'
 # ==== DRF ====
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework.authentication.SessionAuthentication',),
+    # JWT first: a request with a Bearer token must not be decided by a session cookie from another account.
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
     'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.IsAuthenticated',),
     'DEFAULT_RENDERER_CLASSES': ('rest_framework.renderers.JSONRenderer',),
     'DEFAULT_THROTTLE_RATES': {
         'holds_user': configs.str('HOLD_THROTTLE_USER_RATE', default='10/min'),
         'holds_ip': configs.str('HOLD_THROTTLE_IP_RATE', default='120/min'),
+        'login_username': configs.str('LOGIN_THROTTLE_USERNAME_RATE', default='5/min'),
+        'auth_ip': configs.str('AUTH_THROTTLE_IP_RATE', default='30/min'),
     },
     'DEFAULT_PAGINATION_CLASS': 'utils.drf_helper.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'EXCEPTION_HANDLER': 'utils.drf_helper.rest_exception_handler.exception_handler',
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# ==== JWT ====
+
+# Tokens are signed with SECRET_KEY, so rotating it signs every user out.
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    # Blacklisting needs rest_framework_simplejwt.token_blacklist installed; without it rotation silently keeps old tokens valid.
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'uuid',
+    'TOKEN_OBTAIN_SERIALIZER': 'accounts.serializers.TokenObtainPairSerializer',
 }
 
 SPECTACULAR_SETTINGS = {

@@ -50,6 +50,14 @@ All notable changes to TicketRush are documented here. The format follows
 - Add `DJANGO_PUBLIC_API_URL`, `DJANGO_PAYMENT_GATEWAY`, `DJANGO_MOCK_GATEWAY_WEBHOOK_SECRET`, and `DJANGO_TICKET_SIGNING_KEY`. All but the gateway name are required in production.
 - Add a payment gateway registry: an adapter class registers itself with `@register_gateway('<provider>')`, and an unregistered `DJANGO_PAYMENT_GATEWAY` stops the process at boot.
 - Add `DJANGO_PAYMENT_WEBHOOK_PROVIDERS`, which lists the providers whose webhooks are accepted. Empty accepts the active gateway only; list both providers while switching so payments started on the old one still complete.
+- Add JWT authentication:
+  - `POST /api/auth/register/` creates a buyer account and returns the user with a token pair. A taken username returns `409 USERNAME_TAKEN`, and weak passwords are refused by Django's password validators.
+  - `POST /api/auth/login/` returns an access token (15 minutes) and a refresh token (7 days). Every failure returns the same `401 NOT_AUTHENTICATED`.
+  - `POST /api/auth/refresh/` rotates the refresh token and blacklists the old one, so a reused refresh token is refused.
+  - Tokens identify the user by UUID. API calls accept `Authorization: Bearer <access>`.
+- Add login throttling per username (`DJANGO_LOGIN_THROTTLE_USERNAME_RATE`) and per IP for login and register together (`DJANGO_AUTH_THROTTLE_IP_RATE`). Both refuse with `503 SIGN_IN_PAUSED` when Redis is unavailable; refresh is not throttled. The username limit counts a name the way login reads it, so padding or a numeric JSON value does not open a new bucket.
+- Add the `accounts.flush_expired_tokens` beat task, which deletes expired refresh-token records once a day on the `bulk` queue. The admin lists issued refresh tokens without showing the tokens themselves.
+- Production refuses to boot when `DJANGO_SECRET_KEY` is shorter than 32 bytes, because it signs JWTs.
 
 ### Changed
 - Rename the health endpoints to `/system/healthcheck/`, `/system/readiness/`, and `/system/dependencies/` in the design documents and diagrams.
