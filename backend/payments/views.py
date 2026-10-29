@@ -76,7 +76,26 @@ class OrderDetailView(RetrieveAPIView):
     lookup_field = 'uuid'
 
     def get_queryset(self):
-        return Order.objects.filter(hold__user=self.request.user).select_related('hold__event')
+        return my_orders(self.request.user)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=['Orders'],
+        summary='List my orders',
+        description="The caller's orders in every status, newest first, each with its latest payment and its tickets once paid.",
+        responses={200: OrderSerializer(many=True), 401: ERROR_RESPONSE},
+    )
+)
+class MyOrdersView(ListAPIView):
+    serializer_class = OrderSerializer
+
+    def get_queryset(self):
+        return my_orders(self.request.user)
+
+
+def my_orders(user):
+    return Order.objects.filter(hold__user=user).select_related('hold__event').prefetch_related('payments', 'tickets').order_by('-created_on', '-id')
 
 
 @extend_schema_view(

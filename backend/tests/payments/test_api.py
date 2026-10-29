@@ -1,10 +1,14 @@
 from unittest import mock
 
 import pytest
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 
 from mockgateway.models import FaultConfig
 from mockgateway.models import MockCharge
+from payments import services as payment_services
+from payments.models import Payment
 from payments.models import Ticket
 from payments.models import WebhookEvent
 from reliability.models import OutboxMessage
@@ -153,3 +157,51 @@ def test_my_tickets_lists_only_my_own(api):
 
     assert response.status_code == 200
     assert response.json()['count'] == 0
+
+
+def _paid_order(user, *, quantity=1):
+    hold = make_hold(user=user, event=make_event(title='Paid show', venue_name='Hall A'), quantity=quantity)
+    payment = payment_services.submit_charge(payment_services.prepare_checkout(user=user, hold_uuid=hold.uuid))
+    webhook = WebhookEvent.objects.create(
+        provider='mock',
+        provider_event_id=f'evt_{payment.uuid}',
+        event_type='charge.succeeded',
+        payment_key=str(payment.uuid),
+        payload={'id': f'evt_{payment.uuid}', 'type': 'charge.succeeded', 'data': {'idempotency_key': str(payment.uuid)}},
+    )
+    assert payment_services.apply_charge_succeeded(webhook_event_id=webhook.pk) == 'paid'
+    return Payment.objects.get(pk=payment.pk).order
+
+
+def test_my_orders_lists_my_orders_with_event_and_tickets(api, buyer):
+    order = _paid_order(buyer, quantity=2)
+    make_hold(user=make_user(username='other'))
+
+    response = api.get('/api/me/orders/')
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body['count'] == 1
+    data = body['data'][0]
+    assert data['uuid'] == str(order.uuid)
+    assert data['status'] == 'paid'
+    assert (data['event']['title'], data['event']['venue_name']) == ('Paid show', 'Hall A')
+    assert [ticket['seq'] for ticket in data['tickets']] == [1, 2]
+    assert data['payment']['status'] == 'succeeded'
+
+
+def test_my_orders_queries_do_not_grow_with_the_order_count(api, buyer, django_assert_max_num_queries):
+    _paid_order(buyer)
+    with CaptureQueriesContext(connection) as one:
+        api.get('/api/me/orders/')
+    _paid_order(buyer)
+    _paid_order(buyer)
+
+    with django_assert_max_num_queries(len(one.captured_queries)):
+        response = api.get('/api/me/orders/')
+
+    assert response.json()['count'] == 3
+
+
+def test_my_orders_requires_sign_in():
+    assert APIClient().get('/api/me/orders/').status_code == 401

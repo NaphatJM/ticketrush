@@ -1,6 +1,10 @@
+from datetime import timedelta
 from unittest import mock
 
 import pytest
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
+from django.utils import timezone
 from redis.exceptions import ConnectionError as RedisConnectionError
 from rest_framework.test import APIClient
 
@@ -183,3 +187,87 @@ def test_another_users_hold_cannot_be_released(api):
 
     assert response.status_code == 404
     assert Hold.objects.get(uuid=hold_uuid).status == Hold.Status.ACTIVE
+
+
+def test_unpublished_events_are_hidden_and_cannot_be_held(api):
+    draft = make_event(is_published=False)
+    make_event(title='Live')
+
+    assert [event['title'] for event in APIClient().get('/api/events/').json()['data']] == ['Live']
+    assert APIClient().get(f'/api/events/{draft.uuid}/').status_code == 404
+    response = _hold(api, draft)
+    assert response.status_code == 404
+    assert Event.objects.get(pk=draft.pk).available == draft.capacity
+
+
+def test_new_events_start_unpublished():
+    assert Event._meta.get_field('is_published').default is False
+
+
+@pytest.mark.parametrize(
+    ('opens', 'closes', 'available', 'expected'),
+    [
+        (timedelta(hours=1), timedelta(hours=2), 10, 'upcoming'),
+        (-timedelta(hours=1), timedelta(hours=1), 10, 'on_sale'),
+        (-timedelta(hours=1), timedelta(hours=1), 0, 'sold_out'),
+        (-timedelta(hours=2), -timedelta(hours=1), 0, 'closed'),
+    ],
+)
+def test_sale_status_is_reported_and_filterable(opens, closes, available, expected):
+    now = timezone.now()
+    event = make_event(sale_opens_at=now + opens, sale_closes_at=now + closes, available=available)
+    upcoming = {'sale_opens_at': now + timedelta(days=1), 'sale_closes_at': now + timedelta(days=2)}
+    make_event(title='Other', **(upcoming if expected == 'on_sale' else {}))
+
+    assert APIClient().get(f'/api/events/{event.uuid}/').json()['data']['sale_status'] == expected
+    listed = APIClient().get('/api/events/', {'status': expected}).json()['data']
+    assert [item['uuid'] for item in listed] == [str(event.uuid)]
+
+
+def test_an_unknown_status_filter_is_rejected():
+    response = APIClient().get('/api/events/', {'status': 'soon'})
+
+    assert response.status_code == 400
+
+
+def test_events_can_be_filtered_by_category():
+    concert = make_event(category=Event.Category.CONCERT)
+    make_event(category=Event.Category.SPORTS)
+
+    listed = APIClient().get('/api/events/', {'category': 'concert'}).json()['data']
+
+    assert [item['uuid'] for item in listed] == [str(concert.uuid)]
+
+
+def test_the_list_omits_long_text_that_the_detail_returns():
+    event = make_event(
+        summary='Short', description='Long text', important_info='Bring ID', venue_address='1 Road', venue_map_url='https://maps.example/x'
+    )
+
+    listed = APIClient().get('/api/events/').json()['data'][0]
+    detail = APIClient().get(f'/api/events/{event.uuid}/').json()['data']
+
+    assert listed['summary'] == 'Short'
+    assert 'description' not in listed
+    assert (detail['description'], detail['important_info'], detail['venue_address'], detail['venue_map_url']) == (
+        'Long text',
+        'Bring ID',
+        '1 Road',
+        'https://maps.example/x',
+    )
+
+
+def test_banner_and_map_urls_must_use_https():
+    event = make_event(banner_url='http://example.test/banner.jpg', venue_map_url='http://maps.example/x')
+
+    with pytest.raises(ValidationError) as excinfo:
+        event.full_clean()
+
+    assert set(excinfo.value.message_dict) == {'banner_url', 'venue_map_url'}
+
+
+def test_an_event_cannot_end_before_it_starts():
+    now = timezone.now()
+
+    with pytest.raises(IntegrityError):
+        make_event(starts_at=now + timedelta(days=2), ends_at=now + timedelta(days=1))

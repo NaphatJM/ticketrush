@@ -1,7 +1,10 @@
+from django.utils import timezone
+from django.utils.functional import cached_property
 from drf_spectacular.utils import OpenApiParameter
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.utils import extend_schema_view
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -16,6 +19,7 @@ from utils.drf_helper.views import encapsulation_result
 
 from . import services
 from .models import Event
+from .serializers import EventDetailSerializer
 from .serializers import EventSerializer
 from .serializers import HoldCreateSerializer
 from .serializers import HoldSerializer
@@ -44,32 +48,63 @@ IDEMPOTENCY_ERRORS_DESCRIPTION = (
 )
 
 
+SALE_STATUS_DESCRIPTION = (
+    '`sale_status` is `upcoming`, `on_sale`, `sold_out`, or `closed`. `sold_out` can return to `on_sale` when unpaid holds expire. '
+    '`available` is the live stock count; prices are in satang (1/100 THB).'
+)
+
+
 @extend_schema_view(
     get=extend_schema(
         tags=['Events'],
         summary='List events',
-        description='Public. `available` is the live stock count; prices are in satang (1/100 THB).',
-        responses={200: EventSerializer(many=True)},
+        description='Public. Lists published events by sale opening time. ' + SALE_STATUS_DESCRIPTION,
+        parameters=[
+            OpenApiParameter('status', str, enum=Event.SaleStatus.values, description='Only events in this sale status.'),
+            OpenApiParameter('category', str, enum=Event.Category.values, description='Only events in this category.'),
+        ],
+        responses={200: EventSerializer(many=True), 400: ERROR_RESPONSE},
     )
 )
 class EventListView(ListAPIView):
     permission_classes = (AllowAny,)
     serializer_class = EventSerializer
-    queryset = Event.objects.all()
+
+    def get_queryset(self):
+        queryset = Event.objects.filter(is_published=True)
+        sale_status = self.request.query_params.get('status')
+        if sale_status is not None:
+            if sale_status not in Event.SaleStatus.values:
+                raise ValidationError({'status': [f'Must be one of: {", ".join(Event.SaleStatus.values)}.']})
+            queryset = queryset.filter(Event.sale_status_filter(sale_status, self.now))
+        category = self.request.query_params.get('category')
+        if category is not None:
+            if category not in Event.Category.values:
+                raise ValidationError({'category': [f'Must be one of: {", ".join(Event.Category.values)}.']})
+            queryset = queryset.filter(category=category)
+        return queryset
+
+    def get_serializer_context(self):
+        return super().get_serializer_context() | {'now': self.now}
+
+    @cached_property
+    def now(self):
+        return timezone.now()
 
 
 @extend_schema_view(
     get=extend_schema(
         tags=['Events'],
         summary='Get an event',
-        description='Public. `available` is the live stock count; prices are in satang (1/100 THB).',
-        responses={200: wrap_success('EventDetail', EventSerializer()), 404: ERROR_RESPONSE},
+        description='Public. Adds the long description, important info, and venue details to the list fields. '
+        'An unpublished event returns `404 NOT_FOUND`. ' + SALE_STATUS_DESCRIPTION,
+        responses={200: wrap_success('EventDetail', EventDetailSerializer()), 404: ERROR_RESPONSE},
     )
 )
 class EventDetailView(RetrieveAPIView):
     permission_classes = (AllowAny,)
-    serializer_class = EventSerializer
-    queryset = Event.objects.all()
+    serializer_class = EventDetailSerializer
+    queryset = Event.objects.filter(is_published=True)
     lookup_field = 'uuid'
 
 

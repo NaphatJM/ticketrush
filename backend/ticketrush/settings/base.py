@@ -49,6 +49,10 @@ READINESS_TOKEN = configs.str('READINESS_TOKEN', default='')
 
 TRUST_FORWARDED_FOR = configs.bool('TRUST_FORWARDED_FOR', default=False)
 
+BFF_SHARED_SECRET = configs.str('BFF_SHARED_SECRET', default='')
+if BFF_SHARED_SECRET and len(BFF_SHARED_SECRET.encode()) < 32 and not DEBUG and not _IS_TEST:
+    raise ImproperlyConfigured('DJANGO_BFF_SHARED_SECRET must be at least 32 bytes: it lets the caller choose the client IP that throttles count')
+
 _LOG_LEVELS = frozenset({'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'})
 LOG_LEVEL = (configs.str('LOG_LEVEL', default='INFO') or 'INFO').strip().upper()
 if LOG_LEVEL not in _LOG_LEVELS:

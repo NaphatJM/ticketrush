@@ -28,6 +28,7 @@ def make_event(**overrides) -> Event:
         'capacity': 10,
         'price_satang': 50_000,
         'max_per_user': 2,
+        'is_published': True,
     } | overrides
     if 'organizer' not in fields:
         fields['organizer'] = make_user(username=f'organizer-{uuid4().hex[:8]}', role=User.Role.ORGANIZER)

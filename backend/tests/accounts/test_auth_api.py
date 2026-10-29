@@ -324,3 +324,18 @@ def test_register_fails_closed_when_the_throttle_store_is_down():
     assert response.status_code == 503
     assert response.json()['status']['code'] == 'SIGN_IN_PAUSED'
     assert not User.objects.filter(username='alice').exists()
+
+
+def test_me_returns_the_signed_in_user():
+    user = make_user(username='alice', email='alice@example.test')
+    client = APIClient()
+    client.force_authenticate(user)
+
+    response = client.get('/api/auth/me/')
+
+    assert response.status_code == 200
+    assert response.json()['data'] == {'uuid': str(user.uuid), 'username': 'alice', 'email': 'alice@example.test', 'role': 'buyer'}
+
+
+def test_me_requires_sign_in():
+    assert APIClient().get('/api/auth/me/').status_code == 401
