@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<body style="margin:0;padding:24px;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;color:#18181b">
+  <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:8px;padding:24px">
+    <h1 style="margin:0 0 8px;font-size:20px">{{ event.title }}</h1>
+    <p style="margin:0 0 16px;color:#52525b">{{ event.starts_at|date:"l j F Y, H:i" }} (Bangkok time)</p>
+    <p style="margin:0 0 24px">Your payment of THB {{ amount }} is confirmed. Show one code per person at the entrance.</p>
+    {% for ticket in tickets %}
+    <div style="text-align:center;margin:0 0 24px">
+      <img src="cid:{{ ticket.cid }}" alt="Ticket {{ ticket.seq }} QR code" width="240" height="240" style="display:block;margin:0 auto">
+      <p style="margin:8px 0 0;font-size:14px">Ticket {{ ticket.seq }} of {{ tickets|length }}</p>
+      <p style="margin:4px 0 0;font-family:monospace;font-size:11px;color:#71717a;word-break:break-all">{{ ticket.code }}</p>
+    </div>
+    {% endfor %}
+    <p style="margin:0;font-size:12px;color:#71717a">Order {{ order.uuid }}</p>
+  </div>
+</body>
+</html>

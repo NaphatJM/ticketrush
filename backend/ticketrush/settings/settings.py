@@ -5,6 +5,7 @@ from .celery import *  # noqa: F403
 
 THIRD_PARTY_APPS = [
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'drf_spectacular',
     'drf_spectacular_sidecar',
     'django_guid',
@@ -15,6 +16,11 @@ LOCAL_APPS = [
     'accounts',
     'audit',
     'rest_framework_tracking',
+    'reliability',
+    'ticketing',
+    'mockgateway',
+    'payments',
+    'notify',
 ]
 
 INSTALLED_APPS += [

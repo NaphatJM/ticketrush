@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -32,6 +33,9 @@ SECRET_KEY = (
     )
     or 'dev-only-insecure-key'
 )
+
+if len(SECRET_KEY.encode()) < 32 and not DEBUG and not _IS_TEST:
+    raise ImproperlyConfigured('DJANGO_SECRET_KEY must be at least 32 bytes: it is the HS256 key that signs JWTs')
 
 ALLOWED_HOSTS = _required_in_prod(
     'ALLOWED_HOSTS',
@@ -112,6 +116,43 @@ elif DEBUG or _IS_TEST:
 else:
     raise ImproperlyConfigured('DJANGO_REDIS_URL is required when DEBUG is False: it is the Celery broker and the shared throttle store')
 
+# ==== Payments ====
+
+PAYMENT_GATEWAY = configs.str('PAYMENT_GATEWAY', default='mock')
+PAYMENT_WEBHOOK_PROVIDERS = configs.list('PAYMENT_WEBHOOK_PROVIDERS', default=[])
+
+PUBLIC_API_URL = (
+    _required_in_prod(
+        'PUBLIC_API_URL',
+        configs.str('PUBLIC_API_URL', default=''),
+        'payment links and gateway webhooks are addressed to it',
+    )
+    or 'http://localhost:8000'
+).rstrip('/')
+
+MOCK_GATEWAY_WEBHOOK_SECRET = (
+    _required_in_prod(
+        'MOCK_GATEWAY_WEBHOOK_SECRET',
+        configs.str('MOCK_GATEWAY_WEBHOOK_SECRET', default=''),
+        'gateway webhooks are signed and verified with it',
+    )
+    or 'dev-only-webhook-secret'
+)
+
+TICKET_SIGNING_KEY = (
+    _required_in_prod(
+        'TICKET_SIGNING_KEY',
+        configs.str('TICKET_SIGNING_KEY', default=''),
+        'ticket QR codes are signed with it',
+    )
+    or 'dev-only-ticket-key'
+)
+
+# ==== Email ====
+
+RESEND_API_KEY = _required_in_prod('RESEND_API_KEY', configs.str('RESEND_API_KEY', default=''), 'ticket emails are sent through Resend')
+EMAIL_FROM = configs.str('EMAIL_FROM', default='TicketRush <onboarding@resend.dev>')
+
 # ==== i18n / static ====
 
 LANGUAGE_CODE = 'en-us'
@@ -167,13 +208,37 @@ X_FRAME_OPTIONS = 'DENY'
 # ==== DRF ====
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework.authentication.SessionAuthentication',),
+    # JWT first: a request with a Bearer token must not be decided by a session cookie from another account.
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
     'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.IsAuthenticated',),
     'DEFAULT_RENDERER_CLASSES': ('rest_framework.renderers.JSONRenderer',),
+    'DEFAULT_THROTTLE_RATES': {
+        'holds_user': configs.str('HOLD_THROTTLE_USER_RATE', default='10/min'),
+        'holds_ip': configs.str('HOLD_THROTTLE_IP_RATE', default='120/min'),
+        'login_username': configs.str('LOGIN_THROTTLE_USERNAME_RATE', default='5/min'),
+        'auth_ip': configs.str('AUTH_THROTTLE_IP_RATE', default='30/min'),
+    },
     'DEFAULT_PAGINATION_CLASS': 'utils.drf_helper.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
     'EXCEPTION_HANDLER': 'utils.drf_helper.rest_exception_handler.exception_handler',
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# ==== JWT ====
+
+# Tokens are signed with SECRET_KEY, so rotating it signs every user out.
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    # Blacklisting needs rest_framework_simplejwt.token_blacklist installed; without it rotation silently keeps old tokens valid.
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'uuid',
+    'TOKEN_OBTAIN_SERIALIZER': 'accounts.serializers.TokenObtainPairSerializer',
 }
 
 SPECTACULAR_SETTINGS = {
@@ -228,6 +293,11 @@ LOGGING = {
         'celery': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
         'accounts': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
         'audit': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
+        'reliability': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
+        'ticketing': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
+        'mockgateway': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
+        'payments': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
+        'notify': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
         'rest_framework_tracking': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
         'utils': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
         'ticketrush': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},

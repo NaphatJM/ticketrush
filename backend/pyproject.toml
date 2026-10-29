@@ -9,9 +9,11 @@ dependencies = [
     "django-environ>=0.14.0",
     "django-guid>=3.6.1",
     "djangorestframework>=3.18.3",
+    "djangorestframework-simplejwt>=5.5",
     "drf-spectacular[sidecar]>=0.30.0",
     "psycopg[binary]>=3.3.6",
     "redis>=6.4.0",
+    "segno>=1.6",
     "whitenoise>=6.12.0",
 ]
 

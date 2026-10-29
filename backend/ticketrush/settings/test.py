@@ -3,6 +3,9 @@ from .settings import *  # noqa: F403
 
 DEBUG = True
 
+# JWTs are HS256-signed with SECRET_KEY, which PyJWT expects to be at least 32 bytes.
+SECRET_KEY = 'test-only-secret-key-not-for-production'  # noqa: S105
+
 # Tests run on PostgreSQL from DJANGO_DATABASE_URL: the concurrency tests need real row locks.
 
 PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']

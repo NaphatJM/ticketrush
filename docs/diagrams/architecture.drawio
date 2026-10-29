@@ -1,146 +1,37 @@
-<mxfile host="drawio">
+<mxfile host="app.diagrams.net">
   <diagram id="architecture" name="Architecture">
-    <mxGraphModel adaptiveColors="auto" dx="1500" dy="760" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1540" pageHeight="720" math="0" shadow="0">
+    <mxGraphModel dx="1715" dy="723" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1540" pageHeight="720" math="0" shadow="0" adaptiveColors="auto">
       <root>
         <mxCell id="0" />
-        <mxCell id="conn" value="Connections" parent="0" />
-        <mxCell id="comp" value="Components" parent="0" />
-        <mxCell id="title" value="&lt;b&gt;TicketRush · Logical architecture&lt;/b&gt;" style="text;html=1;fontSize=20;align=left;verticalAlign=middle;" vertex="1" parent="comp">
-          <mxGeometry x="40" y="0" width="520" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="legend" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;solid = request / data&lt;br&gt;dashed = telemetry (OTLP)" style="rounded=0;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=none;strokeColor=#999999;" vertex="1" parent="comp">
-          <mxGeometry x="1340" y="40" width="180" height="70" as="geometry" />
-        </mxCell>
-        <mxCell id="c_buyer" value="ผู้ซื้อบัตร&lt;br&gt;(Browser)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="comp">
-          <mxGeometry x="40" y="98" width="140" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="c_admin" value="ผู้จัดงาน / Admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="comp">
-          <mxGeometry x="40" y="170" width="140" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="c_locust" value="Locust&lt;br&gt;(load test)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;dashed=1;" vertex="1" parent="comp">
-          <mxGeometry x="40" y="290" width="140" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="vercel" value="Next.js · Vercel" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#eeeeee;strokeColor=#333333;fontStyle=1;collapsible=0;" vertex="1" parent="comp">
-          <mxGeometry x="240" y="60" width="220" height="200" as="geometry" />
-        </mxCell>
-        <mxCell id="v_pages" value="Pages&lt;br&gt;(SSR + client)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" vertex="1" parent="vercel">
-          <mxGeometry x="20" y="40" width="180" height="56" as="geometry" />
-        </mxCell>
-        <mxCell id="v_bff" value="BFF route handlers&lt;br&gt;httpOnly session cookie" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" vertex="1" parent="vercel">
-          <mxGeometry x="20" y="120" width="180" height="56" as="geometry" />
-        </mxCell>
-        <mxCell id="django" value="Django + DRF API · gunicorn" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;collapsible=0;" vertex="1" parent="comp">
-          <mxGeometry x="540" y="40" width="460" height="345" as="geometry" />
-        </mxCell>
-        <mxCell id="d_mw" value="Middleware" style="swimlane;startSize=26;html=1;rounded=1;fillColor=#ffffff;strokeColor=#82b366;fontStyle=1;collapsible=0;" vertex="1" parent="django">
-          <mxGeometry x="15" y="40" width="110" height="285" as="geometry" />
-        </mxCell>
-        <mxCell id="m_cid" value="cid" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f8ee;strokeColor=#82b366;" vertex="1" parent="d_mw">
-          <mxGeometry x="10" y="36" width="90" height="36" as="geometry" />
-        </mxCell>
-        <mxCell id="m_otel" value="OTel trace" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f8ee;strokeColor=#82b366;" vertex="1" parent="d_mw">
-          <mxGeometry x="10" y="84" width="90" height="36" as="geometry" />
-        </mxCell>
-        <mxCell id="m_auth" value="auth" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f8ee;strokeColor=#82b366;" vertex="1" parent="d_mw">
-          <mxGeometry x="10" y="132" width="90" height="36" as="geometry" />
-        </mxCell>
-        <mxCell id="m_rl" value="rate limit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f8ee;strokeColor=#82b366;" vertex="1" parent="d_mw">
-          <mxGeometry x="10" y="180" width="90" height="36" as="geometry" />
-        </mxCell>
-        <mxCell id="m_csrf" value="CSRF" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f8ee;strokeColor=#82b366;" vertex="1" parent="d_mw">
-          <mxGeometry x="10" y="228" width="90" height="36" as="geometry" />
-        </mxCell>
-        <mxCell id="d_auth" value="auth" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="django">
-          <mxGeometry x="140" y="40" width="145" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="d_events" value="events" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="django">
-          <mxGeometry x="300" y="40" width="145" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="d_inv" value="inventory&lt;br&gt;holds (TTL)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="django">
-          <mxGeometry x="140" y="115" width="145" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="d_orders" value="checkout&lt;br&gt;orders + outbox" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="django">
-          <mxGeometry x="300" y="115" width="145" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="d_mock" value="mock gateway&lt;br&gt;fault injection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;dashed=1;" vertex="1" parent="django">
-          <mxGeometry x="140" y="190" width="145" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="d_pay" value="payments&lt;br&gt;adapter · dedupe" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="django">
-          <mxGeometry x="300" y="190" width="145" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="d_health" value="/system/healthcheck · /system/readiness" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="django">
-          <mxGeometry x="140" y="265" width="145" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="d_tickets" value="tickets&lt;br&gt;QR issue · verify" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="django">
-          <mxGeometry x="300" y="265" width="145" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="pg" value="PostgreSQL&lt;br&gt;source of truth" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="comp">
-          <mxGeometry x="1080" y="60" width="180" height="110" as="geometry" />
-        </mxCell>
-        <mxCell id="redis" value="Redis&lt;br&gt;broker · rate limit · cache" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="comp">
-          <mxGeometry x="1080" y="300" width="180" height="100" as="geometry" />
-        </mxCell>
-        <mxCell id="gateway" value="Payment gateway&lt;br&gt;Omise (test mode)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="comp">
-          <mxGeometry x="1340" y="230" width="180" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="celery" value="Celery" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;collapsible=0;" vertex="1" parent="comp">
-          <mxGeometry x="540" y="460" width="720" height="200" as="geometry" />
-        </mxCell>
-        <mxCell id="k_beat" value="&lt;b&gt;beat&lt;/b&gt; (scheduler)&lt;br&gt;- outbox relay&lt;br&gt;- hold expiry sweeper&lt;br&gt;- payment reconcile&lt;br&gt;- queue depth metrics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;align=left;spacingLeft=10;" vertex="1" parent="celery">
-          <mxGeometry x="20" y="45" width="210" height="130" as="geometry" />
-        </mxCell>
-        <mxCell id="k_crit" value="&lt;b&gt;worker-critical&lt;/b&gt;&lt;br&gt;queue: critical&lt;br&gt;- confirm payment&lt;br&gt;- issue ticket QR" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;align=left;spacingLeft=10;" vertex="1" parent="celery">
-          <mxGeometry x="250" y="45" width="210" height="130" as="geometry" />
-        </mxCell>
-        <mxCell id="k_bulk" value="&lt;b&gt;worker-bulk&lt;/b&gt;&lt;br&gt;queue: bulk&lt;br&gt;- send email&lt;br&gt;- CSV export&lt;br&gt;- dead letter queue" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;align=left;spacingLeft=10;" vertex="1" parent="celery">
-          <mxGeometry x="480" y="45" width="220" height="130" as="geometry" />
-        </mxCell>
-        <mxCell id="email" value="Email provider&lt;br&gt;(Resend)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="comp">
-          <mxGeometry x="1340" y="540" width="180" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="grafana" value="Grafana Cloud" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;collapsible=0;" vertex="1" parent="comp">
-          <mxGeometry x="40" y="470" width="180" height="230" as="geometry" />
-        </mxCell>
-        <mxCell id="g_m" value="Metrics (Prometheus)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" vertex="1" parent="grafana">
-          <mxGeometry x="15" y="40" width="150" height="36" as="geometry" />
-        </mxCell>
-        <mxCell id="g_l" value="Logs (Loki)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" vertex="1" parent="grafana">
-          <mxGeometry x="15" y="84" width="150" height="36" as="geometry" />
-        </mxCell>
-        <mxCell id="g_t" value="Traces (Tempo)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" vertex="1" parent="grafana">
-          <mxGeometry x="15" y="128" width="150" height="36" as="geometry" />
-        </mxCell>
-        <mxCell id="g_a" value="Alerts + Synthetics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" vertex="1" parent="grafana">
-          <mxGeometry x="15" y="172" width="150" height="40" as="geometry" />
-        </mxCell>
-        <mxCell id="e_buyer" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="conn" source="c_buyer" target="v_pages">
+        <mxCell id="conn" parent="0" value="Connections" />
+        <mxCell id="e_buyer" edge="1" parent="conn" source="c_buyer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="v_pages" value="HTTPS">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_admin" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.8;" edge="1" parent="conn" source="c_admin" target="v_pages">
+        <mxCell id="e_admin" edge="1" parent="conn" source="c_admin" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.8;" target="v_pages">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_pages_bff" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="conn" source="v_pages" target="v_bff">
+        <mxCell id="e_pages_bff" edge="1" parent="conn" source="v_pages" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="v_bff">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_bff" value="REST +&lt;br&gt;traceparent" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.5;entryX=0;entryY=0.4456;" edge="1" parent="conn" source="v_bff" target="d_mw">
+        <mxCell id="e_bff" edge="1" parent="conn" source="v_bff" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.5;entryX=0;entryY=0.4456;" target="d_mw" value="REST +&lt;br&gt;traceparent">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_locust" value="load test" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.5;entryX=0;entryY=0.8421;" edge="1" parent="conn" source="c_locust" target="d_mw">
+        <mxCell id="e_locust" edge="1" parent="conn" source="c_locust" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.5;entryX=0;entryY=0.8421;" target="d_mw" value="load test">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_pg" value="SQL" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.2174;entryX=0;entryY=0.5;" edge="1" parent="conn" source="django" target="pg">
+        <mxCell id="e_pg" edge="1" parent="conn" source="django" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.2174;entryX=0;entryY=0.5;" target="pg" value="SQL">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_redis" value="rate limit&lt;br&gt;cache" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.8986;entryX=0;entryY=0.5;" edge="1" parent="conn" source="django" target="redis">
+        <mxCell id="e_redis" edge="1" parent="conn" source="django" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.8986;entryX=0;entryY=0.5;" target="redis" value="rate limit&lt;br&gt;cache">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_gateway" value="charge ⇄ webhook" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;startArrow=classic;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="conn" source="d_pay" target="gateway">
+        <mxCell id="e_gateway" edge="1" parent="conn" source="d_pay" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;startArrow=classic;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="gateway" value="charge ⇄ webhook">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_queue" value="enqueue / consume" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;startArrow=classic;exitX=0.5;exitY=1;entryX=0.875;entryY=0;" edge="1" parent="conn" source="redis" target="celery">
+        <mxCell id="e_queue" edge="1" parent="conn" source="redis" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;startArrow=classic;exitX=0.5;exitY=1;entryX=0.875;entryY=0;" target="celery" value="enqueue / consume">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_celery_pg" value="outbox ·&lt;br&gt;tickets" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.2;entryX=1;entryY=0.5;" edge="1" parent="conn" source="celery" target="pg">
+        <mxCell id="e_celery_pg" edge="1" parent="conn" source="celery" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.2;entryX=1;entryY=0.5;" target="pg" value="outbox ·&lt;br&gt;tickets">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1300" y="500" />
@@ -148,13 +39,13 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e_email" value="send" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="conn" source="k_bulk" target="email">
-          <mxGeometry x="0.4" relative="1" as="geometry" />
+        <mxCell id="e_email" edge="1" parent="conn" source="k_bulk" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="email" value="send">
+          <mxGeometry relative="1" x="0.4" as="geometry" />
         </mxCell>
-        <mxCell id="e_otlp_celery" value="OTLP" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;dashed=1;strokeColor=#b58900;exitX=0;exitY=0.7;entryX=1;entryY=0.5652;" edge="1" parent="conn" source="celery" target="grafana">
+        <mxCell id="e_otlp_celery" edge="1" parent="conn" source="celery" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;dashed=1;strokeColor=#b58900;exitX=0;exitY=0.7;entryX=1;entryY=0.5652;" target="grafana" value="OTLP">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_otlp_django" value="OTLP" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;dashed=1;strokeColor=#b58900;exitX=0.0435;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="conn" source="django" target="grafana">
+        <mxCell id="e_otlp_django" edge="1" parent="conn" source="django" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;dashed=1;strokeColor=#b58900;exitX=0.0435;exitY=1;entryX=0.5;entryY=0;" target="grafana" value="OTLP">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="560" y="430" />
@@ -162,17 +53,126 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e_mw0" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endSize=4;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="conn" source="m_cid" target="m_otel">
+        <mxCell id="e_mw0" edge="1" parent="conn" source="m_cid" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endSize=4;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="m_otel">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_mw1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endSize=4;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="conn" source="m_otel" target="m_auth">
+        <mxCell id="e_mw1" edge="1" parent="conn" source="m_otel" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endSize=4;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="m_auth">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_mw2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endSize=4;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="conn" source="m_auth" target="m_rl">
+        <mxCell id="e_mw2" edge="1" parent="conn" source="m_auth" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endSize=4;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="m_rl">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_mw3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endSize=4;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="conn" source="m_rl" target="m_csrf">
+        <mxCell id="e_mw3" edge="1" parent="conn" source="m_rl" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endSize=4;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="m_csrf">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="comp" parent="0" value="Components" />
+        <mxCell id="title" parent="comp" style="text;html=1;fontSize=20;align=left;verticalAlign=middle;" value="&lt;b&gt;TicketRush · Logical architecture&lt;/b&gt;" vertex="1">
+          <mxGeometry height="30" width="520" x="40" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" parent="comp" style="rounded=0;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=none;strokeColor=#999999;" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;solid = request / data&lt;br&gt;dashed = telemetry (OTLP)" vertex="1">
+          <mxGeometry height="70" width="180" x="1340" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="c_buyer" parent="comp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="ผู้ซื้อบัตร&lt;br&gt;(Browser)" vertex="1">
+          <mxGeometry height="60" width="140" x="40" y="98" as="geometry" />
+        </mxCell>
+        <mxCell id="c_admin" parent="comp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="ผู้จัดงาน / Admin" vertex="1">
+          <mxGeometry height="60" width="140" x="40" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="c_locust" parent="comp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;dashed=1;" value="Locust&lt;br&gt;(load test)" vertex="1">
+          <mxGeometry height="60" width="140" x="40" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="vercel" parent="comp" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#eeeeee;strokeColor=#333333;fontStyle=1;collapsible=0;" value="Next.js · Vercel" vertex="1">
+          <mxGeometry height="200" width="220" x="240" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="v_pages" parent="vercel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" value="Pages&lt;br&gt;(SSR + client)" vertex="1">
+          <mxGeometry height="56" width="180" x="20" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="v_bff" parent="vercel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" value="BFF route handlers&lt;br&gt;httpOnly session cookie" vertex="1">
+          <mxGeometry height="56" width="180" x="20" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="django" parent="comp" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;collapsible=0;" value="Django + DRF API · gunicorn" vertex="1">
+          <mxGeometry height="345" width="460" x="540" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="d_mw" parent="django" style="swimlane;startSize=26;html=1;rounded=1;fillColor=#ffffff;strokeColor=#82b366;fontStyle=1;collapsible=0;" value="Middleware" vertex="1">
+          <mxGeometry height="285" width="110" x="15" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="m_cid" parent="d_mw" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f8ee;strokeColor=#82b366;" value="cid" vertex="1">
+          <mxGeometry height="36" width="90" x="10" y="36" as="geometry" />
+        </mxCell>
+        <mxCell id="m_otel" parent="d_mw" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f8ee;strokeColor=#82b366;" value="OTel trace" vertex="1">
+          <mxGeometry height="36" width="90" x="10" y="84" as="geometry" />
+        </mxCell>
+        <mxCell id="m_auth" parent="d_mw" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f8ee;strokeColor=#82b366;" value="auth" vertex="1">
+          <mxGeometry height="36" width="90" x="10" y="132" as="geometry" />
+        </mxCell>
+        <mxCell id="m_rl" parent="d_mw" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f8ee;strokeColor=#82b366;" value="rate limit" vertex="1">
+          <mxGeometry height="36" width="90" x="10" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="m_csrf" parent="d_mw" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f8ee;strokeColor=#82b366;" value="CSRF" vertex="1">
+          <mxGeometry height="36" width="90" x="10" y="228" as="geometry" />
+        </mxCell>
+        <mxCell id="d_auth" parent="django" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="auth" vertex="1">
+          <mxGeometry height="60" width="145" x="140" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="d_events" parent="django" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="events" vertex="1">
+          <mxGeometry height="60" width="145" x="300" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="d_inv" parent="django" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="inventory&lt;br&gt;holds (TTL)" vertex="1">
+          <mxGeometry height="60" width="145" x="140" y="115" as="geometry" />
+        </mxCell>
+        <mxCell id="d_orders" parent="django" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="checkout&lt;br&gt;orders + outbox" vertex="1">
+          <mxGeometry height="60" width="145" x="300" y="115" as="geometry" />
+        </mxCell>
+        <mxCell id="d_mock" parent="django" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;dashed=1;" value="mock gateway&lt;br&gt;fault injection" vertex="1">
+          <mxGeometry height="60" width="145" x="140" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="d_pay" parent="django" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="payments&lt;br&gt;adapter · dedupe" vertex="1">
+          <mxGeometry height="60" width="145" x="300" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="d_health" parent="django" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="/system/healthcheck · /system/readiness" vertex="1">
+          <mxGeometry height="60" width="145" x="140" y="265" as="geometry" />
+        </mxCell>
+        <mxCell id="d_tickets" parent="django" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" value="tickets&lt;br&gt;QR issue · verify" vertex="1">
+          <mxGeometry height="60" width="145" x="300" y="265" as="geometry" />
+        </mxCell>
+        <mxCell id="pg" parent="comp" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="PostgreSQL&lt;br&gt;source of truth" vertex="1">
+          <mxGeometry height="110" width="180" x="1080" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="redis" parent="comp" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Redis&lt;br&gt;broker · rate limit · cache" vertex="1">
+          <mxGeometry height="100" width="180" x="1080" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway" parent="comp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Payment gateway&lt;br&gt;Omise (test mode)" vertex="1">
+          <mxGeometry height="60" width="180" x="1340" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="celery" parent="comp" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;collapsible=0;" value="Celery" vertex="1">
+          <mxGeometry height="200" width="720" x="540" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="k_beat" parent="celery" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;align=left;spacingLeft=10;" value="&lt;b&gt;beat&lt;/b&gt; (scheduler)&lt;br&gt;- outbox relay&lt;br&gt;- hold expiry sweeper&lt;br&gt;- payment reconcile&lt;br&gt;- queue depth metrics" vertex="1">
+          <mxGeometry height="130" width="210" x="20" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="k_crit" parent="celery" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;align=left;spacingLeft=10;" value="&lt;b&gt;worker-critical&lt;/b&gt;&lt;br&gt;queue: critical&lt;br&gt;- confirm payment&lt;br&gt;- issue ticket QR" vertex="1">
+          <mxGeometry height="130" width="210" x="250" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="k_bulk" parent="celery" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;align=left;spacingLeft=10;" value="&lt;b&gt;worker-bulk&lt;/b&gt;&lt;br&gt;queue: bulk&lt;br&gt;- send email&lt;br&gt;- CSV export&lt;br&gt;- dead letter queue" vertex="1">
+          <mxGeometry height="130" width="220" x="480" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="email" parent="comp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Email provider&lt;br&gt;(Resend)" vertex="1">
+          <mxGeometry height="60" width="180" x="1340" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="grafana" parent="comp" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;collapsible=0;" value="Grafana Cloud" vertex="1">
+          <mxGeometry height="230" width="180" x="40" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="g_m" parent="grafana" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" value="Metrics (Prometheus)" vertex="1">
+          <mxGeometry height="36" width="150" x="15" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g_l" parent="grafana" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" value="Logs (Loki)" vertex="1">
+          <mxGeometry height="36" width="150" x="15" y="84" as="geometry" />
+        </mxCell>
+        <mxCell id="g_t" parent="grafana" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" value="Traces (Tempo)" vertex="1">
+          <mxGeometry height="36" width="150" x="15" y="128" as="geometry" />
+        </mxCell>
+        <mxCell id="g_a" parent="grafana" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" value="Alerts + Synthetics" vertex="1">
+          <mxGeometry height="40" width="150" x="15" y="172" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

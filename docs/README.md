@@ -68,7 +68,7 @@ The `.drawio.svg` files embed their source, so they open for editing in [draw.io
 - [x] Architecture and infrastructure diagrams
 - [x] Purchase-flow sequence diagram, data model, and failure-handling table
 - [ ] Project skeleton deployed to Railway and Vercel
-- [ ] Events, holds, checkout, and the oversell test under concurrency
+- [x] Events, holds, checkout, and the oversell test under concurrency
 - [ ] Celery jobs, outbox, payment webhooks, and ticket issuing
 - [ ] Logging, tracing, metrics, dashboards, and alerts
 - [ ] Frontend
