@@ -31,7 +31,7 @@ EXPIRE_BATCH_SIZE = 500
 def create_hold(*, user, event_uuid, quantity: int) -> Hold:
     now = timezone.now()
     with transaction.atomic():
-        event = Event.objects.filter(uuid=event_uuid).first()
+        event = Event.objects.filter(uuid=event_uuid, is_published=True).first()
         if event is None:
             raise NotFound
         if quantity > event.max_per_user:

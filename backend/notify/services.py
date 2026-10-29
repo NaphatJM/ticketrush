@@ -40,10 +40,14 @@ def send_ticket_email(*, order_id: int) -> str:
 def build_ticket_email(order: Order, tickets: list[Ticket], *, to: str) -> dict:
     """Render the message. It must be the same for every retry: Resend rejects a reused idempotency key with a different body."""
     event = order.hold.event
+    quantity = order.hold.quantity
     context = {
         'event': event,
         'order': order,
-        'amount': f'{order.amount_satang / 100:,.2f}',
+        'buyer': order.hold.user,
+        'quantity': quantity,
+        'unit_price': _baht(order.amount_satang // quantity),
+        'amount': _baht(order.amount_satang),
         'tickets': [{'seq': ticket.seq, 'code': ticket.code, 'cid': f'ticket-{ticket.seq}'} for ticket in tickets],
     }
     return {
@@ -62,6 +66,10 @@ def build_ticket_email(order: Order, tickets: list[Ticket], *, to: str) -> dict:
             for ticket in tickets
         ],
     }
+
+
+def _baht(satang: int) -> str:
+    return f'{satang / 100:,.2f}'
 
 
 def _qr_png(code: str) -> str:

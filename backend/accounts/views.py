@@ -96,3 +96,14 @@ class RefreshView(AnonymousAuthView):
         except (TokenError, User.DoesNotExist) as exc:
             raise InvalidToken from exc
         return Response(encapsulation_result(serializer.validated_data))
+
+
+class MeView(APIView):
+    @extend_schema(
+        tags=['Auth'],
+        summary='Get the signed-in user',
+        description='Returns the account behind the access token.',
+        responses={200: wrap_success('Me', UserSerializer()), 401: ERROR_RESPONSE},
+    )
+    def get(self, request: Request) -> Response:
+        return Response(encapsulation_result(UserSerializer(request.user).data))

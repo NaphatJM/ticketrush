@@ -43,8 +43,8 @@ def _checkout(hold) -> Payment:
     return payments.submit_charge(payments.prepare_checkout(user=hold.user, hold_uuid=hold.uuid))
 
 
-def _paid_order(*, quantity: int = 1, email: str = 'buyer@example.test', title: str = 'Launch night'):
-    hold = make_hold(user=make_user(email=email), event=make_event(max_per_user=3, title=title), quantity=quantity)
+def _paid_order(*, quantity: int = 1, email: str = 'buyer@example.test', title: str = 'Launch night', **event_fields):
+    hold = make_hold(user=make_user(email=email), event=make_event(max_per_user=3, title=title, **event_fields), quantity=quantity)
     payment = _checkout(hold)
     assert payments.apply_charge_succeeded(webhook_event_id=_webhook(payment, succeeded=True).pk) == 'paid'
     return payment.order
@@ -129,6 +129,44 @@ def test_the_event_title_is_escaped_in_the_html_body():
 
     assert '<script>' not in message['html']
     assert '&lt;script&gt;' in message['html']
+
+
+IMPORTANT_INFO = 'Doors open 18:00\n<b>No bags</b>'
+
+
+def test_the_email_describes_the_event_venue_and_order():
+    order = _paid_order(
+        quantity=2,
+        price_satang=150_000,
+        presented_by='Rush Live',
+        banner_url='https://cdn.example.test/banner.jpg',
+        venue_name='Impact Arena',
+        venue_address='99 Popular Road',
+        venue_map_url='https://maps.example.test/impact',
+        important_info=IMPORTANT_INFO,
+    )
+
+    message = services.build_ticket_email(order, list(order.tickets.all()), to='buyer@example.test')
+
+    html, text = message['html'], message['text']
+    assert 'src="https://cdn.example.test/banner.jpg"' in html
+    assert 'href="https://maps.example.test/impact"' in html
+    for value in ('Rush Live', 'Impact Arena', '99 Popular Road', '2 &times; ticket at THB 1,500.00', 'THB 3,000.00', str(order.uuid)):
+        assert value in html
+    assert 'Doors open 18:00<br>&lt;b&gt;No bags&lt;/b&gt;' in html
+    for value in ('Impact Arena', '2 x ticket at THB 1,500.00', 'Total paid: THB 3,000.00', IMPORTANT_INFO):
+        assert value in text
+
+
+def test_optional_event_sections_are_left_out_when_empty():
+    order = _paid_order()
+
+    message = services.build_ticket_email(order, list(order.tickets.all()), to='buyer@example.test')
+
+    for marker in ('Presented by', 'Where', 'Open in maps', 'Good to know', '<img src="https'):
+        assert marker not in message['html']
+    for marker in ('WHERE', 'GOOD TO KNOW', 'Presented by'):
+        assert marker not in message['text']
 
 
 @override_settings(RESEND_API_KEY='')

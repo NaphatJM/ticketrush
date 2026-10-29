@@ -61,11 +61,18 @@ All notable changes to TicketRush are documented here. The format follows
 - Add the ticket email: paying an order queues `notify.send_ticket_email` on the `bulk` queue through the outbox. It sends one inline QR code per ticket through Resend with an idempotency key per order, so a duplicate delivery sends one email. Sends are capped at 5 per second per worker. Transient failures retry 8 times and then become a dead letter; a message Resend rejects, or a used-up quota, becomes a dead letter at once.
 - Add `DJANGO_RESEND_API_KEY` (required in production; empty disables ticket emails elsewhere) and `DJANGO_EMAIL_FROM`. The default sender, `onboarding@resend.dev`, delivers only to the Resend account's own address; other recipients need a verified domain.
 - A task whose retry cannot be published because the broker is unavailable now becomes a dead letter instead of being dropped.
+- Add event details for the storefront: summary, description, important info, category, presenter, banner URL, venue name, address, and map URL, and an end time. Banner and map links must be HTTPS. The admin groups the fields and previews the banner.
+- Add `is_published`. New events start as drafts, which the API hides and which cannot be held; events that existed before stay published.
+- Add `sale_status` (`upcoming`, `on_sale`, `sold_out`, `closed`) to events, and `?status=` and `?category=` filters to `GET /api/events/`. The list omits the long text that `GET /api/events/<uuid>/` returns.
+- Add `GET /api/auth/me/` and `GET /api/me/orders/`. Orders include an event summary, the latest payment, and the issued tickets.
+- Add `DJANGO_BFF_SHARED_SECRET`. A request that carries it in `BFF-Secret` is counted under the IP in `BFF-Client-IP` by the IP throttles and the audit log, so buyers behind the frontend no longer share one bucket. Production refuses a secret shorter than 32 bytes.
 
 ### Changed
 - Rename the health endpoints to `/system/healthcheck/`, `/system/readiness/`, and `/system/dependencies/` in the design documents and diagrams.
 - Ticket emails are sent from `noreply@mail.naphat.online`, a Resend-verified domain, so any buyer receives them.
 - The production API is served at `https://api.ticketrush.naphat.online`.
 - Move the Django admin from `/staff-admin/` to `/admin/`.
+- Redesign the ticket email: event banner, date and time range, venue with a map link, one ticket card per QR code, an order summary with unit price and payment time, and the event's important info. The plain-text part carries the same details.
+- The `event` field of an order is now an event summary object instead of a UUID, and tickets embed the same summary with the banner and venue.
 - Correct the data model diagram to the real columns: `bigint` primary and foreign keys, a unique `uuid` per domain row, and `created_on` and `updated_on` timestamps. The sequence diagram uses the real API paths, and the docs name `payment.uuid` as the gateway idempotency key.
 - The OpenAPI docs now describe each endpoint with its own summary, description, and tag, declare the `{status, data}` envelope and the paginated list shape that the API actually returns, and list the error responses and the `Idempotent-Replayed` header.

@@ -1,18 +1,166 @@
 <!doctype html>
 <html lang="en">
-<body style="margin:0;padding:24px;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;color:#18181b">
-  <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:8px;padding:24px">
-    <h1 style="margin:0 0 8px;font-size:20px">{{ event.title }}</h1>
-    <p style="margin:0 0 16px;color:#52525b">{{ event.starts_at|date:"l j F Y, H:i" }} (Bangkok time)</p>
-    <p style="margin:0 0 24px">Your payment of THB {{ amount }} is confirmed. Show one code per person at the entrance.</p>
-    {% for ticket in tickets %}
-    <div style="text-align:center;margin:0 0 24px">
-      <img src="cid:{{ ticket.cid }}" alt="Ticket {{ ticket.seq }} QR code" width="240" height="240" style="display:block;margin:0 auto">
-      <p style="margin:8px 0 0;font-size:14px">Ticket {{ ticket.seq }} of {{ tickets|length }}</p>
-      <p style="margin:4px 0 0;font-family:monospace;font-size:11px;color:#71717a;word-break:break-all">{{ ticket.code }}</p>
-    </div>
-    {% endfor %}
-    <p style="margin:0;font-size:12px;color:#71717a">Order {{ order.uuid }}</p>
-  </div>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Your tickets for {{ event.title }}</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#18181b;-webkit-text-size-adjust:100%">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0">{{ quantity }} ticket{{ quantity|pluralize }} for {{ event.title }}, {{ event.starts_at|date:"D j M Y, H:i" }}. Show the QR code at the entrance.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f5">
+    <tr>
+      <td align="center" style="padding:32px 12px">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px">
+
+          <tr>
+            <td style="padding:0 4px 16px;font-size:13px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#18181b">
+              Ticket<span style="color:#e11d48">Rush</span>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="background:#ffffff;border-radius:16px;overflow:hidden">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                {% if event.banner_url %}
+                <tr>
+                  <td style="padding:0;line-height:0">
+                    <img src="{{ event.banner_url }}" alt="" width="600" style="display:block;width:100%;max-width:600px;height:auto;border-radius:16px 16px 0 0">
+                  </td>
+                </tr>
+                {% endif %}
+                <tr>
+                  <td style="padding:28px 32px 8px">
+                    <p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#e11d48">You're going</p>
+                    <h1 style="margin:0;font-size:26px;line-height:1.25;font-weight:800;color:#18181b">{{ event.title }}</h1>
+                    {% if event.presented_by %}<p style="margin:6px 0 0;font-size:14px;color:#71717a">Presented by {{ event.presented_by }}</p>{% endif %}
+                    <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#3f3f46">
+                      Hi {{ buyer.get_username }}, your payment is confirmed and your ticket{{ quantity|pluralize }} {{ quantity|pluralize:"is,are" }} below.
+                      Show one QR code per person at the entrance.
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:20px 32px 4px">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fafafa;border:1px solid #e4e4e7;border-radius:12px">
+                      <tr>
+                        <td style="padding:16px 20px;border-bottom:1px solid #e4e4e7">
+                          <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#71717a">When</p>
+                          <p style="margin:4px 0 0;font-size:15px;font-weight:600;color:#18181b">{{ event.starts_at|date:"l j F Y" }}</p>
+                          <p style="margin:2px 0 0;font-size:14px;color:#52525b">
+                            {{ event.starts_at|date:"H:i" }}{% if event.ends_at %} to {% if event.ends_at|date:"Ymd" == event.starts_at|date:"Ymd" %}{{ event.ends_at|date:"H:i" }}{% else %}{{ event.ends_at|date:"j M, H:i" }}{% endif %}{% endif %} (Bangkok time)
+                          </p>
+                        </td>
+                      </tr>
+                      {% if event.venue_name or event.venue_address %}
+                      <tr>
+                        <td style="padding:16px 20px">
+                          <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#71717a">Where</p>
+                          {% if event.venue_name %}<p style="margin:4px 0 0;font-size:15px;font-weight:600;color:#18181b">{{ event.venue_name }}</p>{% endif %}
+                          {% if event.venue_address %}<p style="margin:2px 0 0;font-size:14px;line-height:1.5;color:#52525b">{{ event.venue_address }}</p>{% endif %}
+                          {% if event.venue_map_url %}<p style="margin:8px 0 0;font-size:14px"><a href="{{ event.venue_map_url }}" style="color:#e11d48;font-weight:600;text-decoration:none">Open in maps &rarr;</a></p>{% endif %}
+                        </td>
+                      </tr>
+                      {% endif %}
+                    </table>
+                  </td>
+                </tr>
+
+                {% for ticket in tickets %}
+                <tr>
+                  <td style="padding:20px 32px 0">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e4e4e7;border-radius:12px">
+                      <tr>
+                        <td style="padding:14px 20px;background:#18181b;border-radius:12px 12px 0 0">
+                          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td style="font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#ffffff">Admit one</td>
+                              <td align="right" style="font-size:12px;color:#d4d4d8">Ticket {{ ticket.seq }} of {{ tickets|length }}</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td align="center" style="padding:24px 20px 8px">
+                          <img src="cid:{{ ticket.cid }}" alt="Ticket {{ ticket.seq }} QR code" width="220" height="220" style="display:block;margin:0 auto;width:220px;height:220px">
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:0 20px"><div style="border-top:2px dashed #e4e4e7;height:0;line-height:0;font-size:0">&nbsp;</div></td>
+                      </tr>
+                      <tr>
+                        <td style="padding:12px 20px 18px">
+                          <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#71717a">Ticket code</p>
+                          <p style="margin:4px 0 0;font-family:'SFMono-Regular',Consolas,'Liberation Mono',monospace;font-size:11px;line-height:1.5;color:#52525b;word-break:break-all">{{ ticket.code }}</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                {% endfor %}
+
+                <tr>
+                  <td style="padding:28px 32px 4px">
+                    <p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#71717a">Order summary</p>
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px;color:#3f3f46">
+                      <tr>
+                        <td style="padding:6px 0">{{ quantity }} &times; ticket at THB {{ unit_price }}</td>
+                        <td align="right" style="padding:6px 0">THB {{ amount }}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:10px 0 6px;border-top:1px solid #e4e4e7;font-weight:700;color:#18181b">Total paid</td>
+                        <td align="right" style="padding:10px 0 6px;border-top:1px solid #e4e4e7;font-weight:700;color:#18181b">THB {{ amount }}</td>
+                      </tr>
+                      {% if order.paid_at %}
+                      <tr>
+                        <td style="padding:6px 0;color:#71717a">Paid</td>
+                        <td align="right" style="padding:6px 0;color:#71717a">{{ order.paid_at|date:"j M Y, H:i" }}</td>
+                      </tr>
+                      {% endif %}
+                      <tr>
+                        <td style="padding:6px 0;color:#71717a">Order</td>
+                        <td align="right" style="padding:6px 0;color:#71717a;font-family:'SFMono-Regular',Consolas,monospace;font-size:12px">{{ order.uuid }}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                {% if event.important_info %}
+                <tr>
+                  <td style="padding:20px 32px 4px">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fff1f2;border-radius:12px">
+                      <tr>
+                        <td style="padding:16px 20px">
+                          <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#be123c">Good to know</p>
+                          <p style="margin:0;font-size:14px;line-height:1.6;color:#3f3f46">{{ event.important_info|linebreaksbr }}</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                {% endif %}
+
+                <tr>
+                  <td style="padding:24px 32px 28px">
+                    <p style="margin:0;font-size:13px;line-height:1.6;color:#71717a">
+                      Each QR code admits one person once. Do not share it: whoever scans first gets in.
+                      If the images do not load, the ticket codes above work the same way.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td align="center" style="padding:20px 12px 0;font-size:12px;line-height:1.6;color:#52525b">
+              Sent by TicketRush to {{ buyer.email }} because you bought tickets for this event.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>

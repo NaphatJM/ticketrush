@@ -1,10 +1,28 @@
-{% autoescape off %}{{ event.title }}
-{{ event.starts_at|date:"l j F Y, H:i" }} (Bangkok time)
+{% autoescape off %}YOU'RE GOING: {{ event.title }}{% if event.presented_by %}
+Presented by {{ event.presented_by }}{% endif %}
 
-Your payment of THB {{ amount }} is confirmed. Show one code per person at the entrance.
+Hi {{ buyer.get_username }}, your payment is confirmed. Show one QR code per person at the entrance.
 The QR codes are attached to this email.
-{% for ticket in tickets %}
-Ticket {{ ticket.seq }} of {{ tickets|length }}: {{ ticket.code }}{% endfor %}
 
-Order {{ order.uuid }}
+WHEN
+{{ event.starts_at|date:"l j F Y, H:i" }}{% if event.ends_at %} to {% if event.ends_at|date:"Ymd" == event.starts_at|date:"Ymd" %}{{ event.ends_at|date:"H:i" }}{% else %}{{ event.ends_at|date:"j F, H:i" }}{% endif %}{% endif %} (Bangkok time)
+{% if event.venue_name or event.venue_address %}
+WHERE
+{% if event.venue_name %}{{ event.venue_name }}
+{% endif %}{% if event.venue_address %}{{ event.venue_address }}
+{% endif %}{% if event.venue_map_url %}Map: {{ event.venue_map_url }}
+{% endif %}{% endif %}
+TICKETS
+{% for ticket in tickets %}Ticket {{ ticket.seq }} of {{ tickets|length }}: {{ ticket.code }}
+{% endfor %}
+ORDER SUMMARY
+{{ quantity }} x ticket at THB {{ unit_price }}
+Total paid: THB {{ amount }}{% if order.paid_at %}
+Paid: {{ order.paid_at|date:"j M Y, H:i" }}{% endif %}
+Order: {{ order.uuid }}
+{% if event.important_info %}
+GOOD TO KNOW
+{{ event.important_info }}
+{% endif %}
+Each QR code admits one person once. Do not share it: whoever scans first gets in.
 {% endautoescape %}
