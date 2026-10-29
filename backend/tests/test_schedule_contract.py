@@ -42,13 +42,14 @@ def test_webhook_delivery_runs_on_bulk_and_payment_processing_on_critical():
 
     assert router.route({}, 'mockgateway.deliver_webhook')['queue'].name == 'bulk'
     assert router.route({}, 'payments.process_succeeded')['queue'].name == 'critical'
+    assert router.route({}, 'notify.send_ticket_email')['queue'].name == 'bulk'
 
 
 def test_a_fresh_web_process_can_publish_every_outbox_topic():
     script = (
         'import django; django.setup(); '
         'from reliability.outbox import task_by_name; '
-        "[task_by_name(name) for name in ('payments.process_succeeded', 'payments.process_failed')]"
+        "[task_by_name(name) for name in ('payments.process_succeeded', 'payments.process_failed', 'notify.send_ticket_email')]"
     )
     env = os.environ | {'DJANGO_SETTINGS_MODULE': 'ticketrush.settings.test'}
 

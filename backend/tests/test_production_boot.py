@@ -17,6 +17,7 @@ PRODUCTION_ENV = {
     'DJANGO_PUBLIC_API_URL': 'https://api.example.test',
     'DJANGO_MOCK_GATEWAY_WEBHOOK_SECRET': 'w' * 32,
     'DJANGO_TICKET_SIGNING_KEY': 't' * 50,
+    'DJANGO_RESEND_API_KEY': 're_placeholder',
 }
 
 

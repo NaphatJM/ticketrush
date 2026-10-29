@@ -58,6 +58,9 @@ All notable changes to TicketRush are documented here. The format follows
 - Add login throttling per username (`DJANGO_LOGIN_THROTTLE_USERNAME_RATE`) and per IP for login and register together (`DJANGO_AUTH_THROTTLE_IP_RATE`). Both refuse with `503 SIGN_IN_PAUSED` when Redis is unavailable; refresh is not throttled. The username limit counts a name the way login reads it, so padding or a numeric JSON value does not open a new bucket.
 - Add the `accounts.flush_expired_tokens` beat task, which deletes expired refresh-token records once a day on the `bulk` queue. The admin lists issued refresh tokens without showing the tokens themselves.
 - Production refuses to boot when `DJANGO_SECRET_KEY` is shorter than 32 bytes, because it signs JWTs.
+- Add the ticket email: paying an order queues `notify.send_ticket_email` on the `bulk` queue through the outbox. It sends one inline QR code per ticket through Resend with an idempotency key per order, so a duplicate delivery sends one email. Sends are capped at 5 per second per worker. Transient failures retry 8 times and then become a dead letter; a message Resend rejects, or a used-up quota, becomes a dead letter at once.
+- Add `DJANGO_RESEND_API_KEY` (required in production; empty disables ticket emails elsewhere) and `DJANGO_EMAIL_FROM`. The default sender, `onboarding@resend.dev`, delivers only to the Resend account's own address; other recipients need a verified domain.
+- A task whose retry cannot be published because the broker is unavailable now becomes a dead letter instead of being dropped.
 
 ### Changed
 - Rename the health endpoints to `/system/healthcheck/`, `/system/readiness/`, and `/system/dependencies/` in the design documents and diagrams.

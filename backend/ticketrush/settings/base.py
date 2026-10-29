@@ -148,6 +148,11 @@ TICKET_SIGNING_KEY = (
     or 'dev-only-ticket-key'
 )
 
+# ==== Email ====
+
+RESEND_API_KEY = _required_in_prod('RESEND_API_KEY', configs.str('RESEND_API_KEY', default=''), 'ticket emails are sent through Resend')
+EMAIL_FROM = configs.str('EMAIL_FROM', default='TicketRush <onboarding@resend.dev>')
+
 # ==== i18n / static ====
 
 LANGUAGE_CODE = 'en-us'
@@ -292,6 +297,7 @@ LOGGING = {
         'ticketing': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
         'mockgateway': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
         'payments': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
+        'notify': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
         'rest_framework_tracking': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
         'utils': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
         'ticketrush': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},

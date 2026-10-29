@@ -1,0 +1,10 @@
+{% autoescape off %}{{ event.title }}
+{{ event.starts_at|date:"l j F Y, H:i" }} (Bangkok time)
+
+Your payment of THB {{ amount }} is confirmed. Show one code per person at the entrance.
+The QR codes are attached to this email.
+{% for ticket in tickets %}
+Ticket {{ ticket.seq }} of {{ tickets|length }}: {{ ticket.code }}{% endfor %}
+
+Order {{ order.uuid }}
+{% endautoescape %}

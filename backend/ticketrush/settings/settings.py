@@ -20,6 +20,7 @@ LOCAL_APPS = [
     'ticketing',
     'mockgateway',
     'payments',
+    'notify',
 ]
 
 INSTALLED_APPS += [

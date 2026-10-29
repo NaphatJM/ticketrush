@@ -1,6 +1,8 @@
 from unittest import mock
 
 import pytest
+from celery import Task
+from celery.exceptions import Reject
 from celery.exceptions import Retry
 from django.db import transaction
 from kombu.exceptions import OperationalError as BrokerError
@@ -101,6 +103,16 @@ def test_a_task_that_exhausts_its_retries_becomes_a_dead_letter():
     letter = DeadLetter.objects.get()
     assert (letter.task_name, letter.args) == ('payments.process_succeeded', {'webhook_event_id': 999_999})
     assert 'DoesNotExist' in letter.error
+
+
+def test_a_retry_the_broker_cannot_accept_becomes_a_dead_letter():
+    # Celery raises Reject when it cannot publish the retry, then acks the task without calling on_failure.
+    with mock.patch.object(Task, 'retry', side_effect=Reject(BrokerError('broker down'), requeue=False)):
+        process_succeeded.apply(kwargs={'webhook_event_id': 999_999}, throw=False)
+
+    letter = DeadLetter.objects.get()
+    assert (letter.task_name, letter.args) == ('payments.process_succeeded', {'webhook_event_id': 999_999})
+    assert 'broker down' in letter.error
 
 
 def test_staff_can_replay_a_dead_letter_once(client, apply_async, django_capture_on_commit_callbacks):

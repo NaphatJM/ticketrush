@@ -170,6 +170,7 @@ def apply_charge_succeeded(*, webhook_event_id: int) -> str:
         for ticket in tickets:
             ticket.code = sign_ticket(ticket.uuid)
         Ticket.objects.bulk_create(tickets)
+        outbox.enqueue('notify.send_ticket_email', {'order_id': order.pk})
         log_action(ActivityVerb.ORDER_PAID, target=order, detail={'tickets': len(tickets), 'late': not converted})
         _mark_processed(event, now)
     logger.info('order paid', extra={'order_id': str(order.uuid), 'tickets': len(tickets)})
