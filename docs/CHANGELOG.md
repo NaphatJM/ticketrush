@@ -27,7 +27,7 @@ All notable changes to TicketRush are documented here. The format follows
 - Add structured JSON logging with a correlation ID on every line. The ID is returned in the `Correlation-ID` header and carried into Celery tasks.
 - Add the ActivityLog audit trail.
 - Add API request tracking, which stores every write, every error, and every slow request, with secrets redacted.
-- Add the CI workflow: ruff, a missing-migration check, and pytest on PostgreSQL and Redis, plus a Docker image build, for every pull request and push to `main` that touches the backend.
+- Add the CI workflow: ruff, a missing-migration check, and pytest on PostgreSQL and Redis, plus a Docker image build, for every pull request and every push to `main` or `develop` that touches the backend.
 - Add events and ticket holds:
   - `GET /api/events/` and `GET /api/events/<uuid>/`, public.
   - `POST /api/events/<uuid>/holds/` reserves stock with one conditional update for 5 minutes, enforces the sale window and the per-user limit, and returns `409` with `SOLD_OUT`, `SALE_NOT_OPEN`, or `PER_USER_LIMIT`.
@@ -64,4 +64,7 @@ All notable changes to TicketRush are documented here. The format follows
 
 ### Changed
 - Rename the health endpoints to `/system/healthcheck/`, `/system/readiness/`, and `/system/dependencies/` in the design documents and diagrams.
+- Ticket emails are sent from `noreply@mail.naphat.online`, a Resend-verified domain, so any buyer receives them.
+- The production API is served at `https://api.ticketrush.naphat.online`.
+- Correct the data model diagram to the real columns: `bigint` primary and foreign keys, a unique `uuid` per domain row, and `created_on` and `updated_on` timestamps. The sequence diagram uses the real API paths, and the docs name `payment.uuid` as the gateway idempotency key.
 - The OpenAPI docs now describe each endpoint with its own summary, description, and tag, declare the `{status, data}` envelope and the paginated list shape that the API actually returns, and list the error responses and the `Idempotent-Replayed` header.

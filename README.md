@@ -15,8 +15,9 @@ docs/       System design and diagrams
 
 | | |
 | --- | --- |
-| Live app | _not deployed yet_ |
-| API docs | _not deployed yet_ |
+| Live app | _frontend not deployed yet_ |
+| API | <https://api.ticketrush.naphat.online> |
+| API docs | <https://api.ticketrush.naphat.online/system/docs/> |
 
 ## Stack
 
@@ -39,7 +40,8 @@ uv run python manage.py runserver
 | --- | --- |
 | `uv run pytest` | Run the test suite against the local PostgreSQL and Redis |
 | `uv run ruff check . && uv run ruff format --check .` | Lint and format check |
-| `uv run celery -A ticketrush worker -Q critical,bulk -l info` | Run a Celery worker |
+| `uv run celery -A ticketrush worker -Q critical,bulk -l info` | Run a Celery worker (add `--pool=solo` on Windows) |
+| `uv run celery -A ticketrush beat -l info` | Run the scheduler for the outbox relay, hold sweeper, and token cleanup |
 
 Environment variables are listed in [backend/.env.example](./backend/.env.example). Django reads only `DJANGO_`-prefixed variables.
 
@@ -49,4 +51,5 @@ Environment variables are listed in [backend/.env.example](./backend/.env.exampl
 | `/system/readiness/` | Deploy gate; checks PostgreSQL |
 | `/system/dependencies/` | PostgreSQL and Redis status; needs `X-Readiness-Token` or a staff session |
 | `/system/docs/` | OpenAPI documentation |
+| `/api/` | Auth, events, holds, checkout, orders, tickets, and payment webhooks; see `/system/docs/` |
 | `/staff-admin/` | Django admin for organizers |

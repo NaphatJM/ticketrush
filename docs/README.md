@@ -4,7 +4,7 @@ TicketRush sells a small number of tickets to many buyers who arrive at the same
 
 The domain is kept deliberately small. This document covers the backend underneath it: concurrency control, background jobs, failure handling, observability, and the delivery pipeline.
 
-> **Status:** design phase. The sections below describe the target system. Items are checked off in the [roadmap](#roadmap) as they are built.
+> **Status:** the backend is live on Railway; the frontend, observability, load test, and deploy pipeline are not built yet. The sections below describe the target system, and the [roadmap](#roadmap) shows what is built.
 
 ## How it works
 
@@ -57,7 +57,7 @@ The `.drawio.svg` files embed their source, so they open for editing in [draw.io
 
 **Background work that survives failure.** Domain changes and the jobs they trigger are written in the same transaction through an outbox table, so a Redis outage cannot lose a job. Tasks are idempotent and acknowledged late, so a worker crash causes a retry, not a lost or duplicated ticket. Ticket issuing and email run on separate queues, so a slow email provider cannot delay ticket confirmation.
 
-**Expected failures are handled, not hoped away.** Every external call has a timeout, retries with exponential backoff and jitter, and a dead-letter queue for jobs that keep failing. Webhooks are verified by signature and deduplicated by event ID. A scheduled reconcile job settles payments whose webhook never arrived.
+**Expected failures are handled, not hoped away.** Every external call has a timeout, retries with exponential backoff and jitter, and a dead-letter queue for jobs that keep failing. Webhooks are verified by signature and deduplicated by event ID. A scheduled reconcile job settles payments whose webhook never arrived (planned).
 
 **Every request can be followed.** Each request gets a correlation ID (`cid`) that appears in every log line. A trace context propagates from the frontend through the API into Celery tasks. Logs are structured JSON and record what happened, in which function, and when.
 
@@ -67,11 +67,13 @@ The `.drawio.svg` files embed their source, so they open for editing in [draw.io
 
 - [x] Architecture and infrastructure diagrams
 - [x] Purchase-flow sequence diagram, data model, and failure-handling table
-- [ ] Project skeleton deployed to Railway and Vercel
+- [x] Backend deployed to Railway
 - [x] Events, holds, checkout, and the oversell test under concurrency
-- [ ] Celery jobs, outbox, payment webhooks, and ticket issuing
+- [x] Celery jobs, outbox, payment webhooks, ticket issuing, and the ticket email
+- [x] JWT sign-up, sign-in, and token refresh
+- [ ] Payment reconcile job
 - [ ] Logging, tracing, metrics, dashboards, and alerts
-- [ ] Frontend
+- [ ] Frontend deployed to Vercel
 - [ ] Security hardening
 - [ ] Load test baseline and one measured optimization
 - [ ] Full CI/CD pipeline: build, test, deploy, smoke test, monitor
