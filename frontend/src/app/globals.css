@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f3efe6;
+  --card: #fbf9f4;
+  --ink: #17140f;
+  --muted: #6b6457;
+  --line: #ddd5c5;
+  --accent: #e2441f;
+  --accent-ink: #ffffff;
+  --ok: #1f7a4d;
+  --warn: #a3620a;
+  --bad: #b3261e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #13110e;
+    --card: #1c1915;
+    --ink: #f1ece2;
+    --muted: #a49c8d;
+    --line: #34302a;
+    --accent: #ff5a33;
+    --accent-ink: #160a05;
+    --ok: #4cc38a;
+    --warn: #e0a347;
+    --bad: #ff7a70;
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.stub {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.perforation {
+  border-top: 2px dashed var(--line);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.7rem 1.25rem;
+  font-weight: 600;
+  transition: transform 120ms ease, background-color 120ms ease, opacity 120ms ease;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn-ghost {
+  border: 1px solid var(--line);
+  background: transparent;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--card);
+}
+
+.field {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
+  font-size: 16px;
+}
+
+.field:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+}

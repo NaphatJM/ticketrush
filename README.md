@@ -53,3 +53,22 @@ Environment variables are listed in [backend/.env.example](./backend/.env.exampl
 | `/system/docs/` | OpenAPI documentation |
 | `/api/` | Auth, events, holds, checkout, orders, tickets, and payment webhooks; see `/system/docs/` |
 | `/admin/` | Django admin for organizers |
+
+### Frontend
+
+Requirements: Node.js 24 and pnpm 10. The Next.js app talks to the API only from the server: route code and server actions hold the JWTs in an encrypted, httpOnly session cookie, so the browser never sees a token.
+
+```bash
+cd frontend
+cp .env.example .env.local
+pnpm install
+pnpm dev                             # http://localhost:3000
+```
+
+| Command (in `frontend/`) | Purpose |
+| --- | --- |
+| `pnpm lint` | ESLint |
+| `pnpm typecheck` | Generate route types and run the TypeScript check |
+| `pnpm build` | Production build |
+
+Environment variables are listed in [frontend/.env.example](./frontend/.env.example). `BFF_SHARED_SECRET` must match `DJANGO_BFF_SHARED_SECRET` on the API, or every buyer is throttled under the frontend server's IP.

@@ -65,6 +65,12 @@ All notable changes to TicketRush are documented here. The format follows
 - Add `is_published`. New events start as drafts, which the API hides and which cannot be held; events that existed before stay published.
 - Add `sale_status` (`upcoming`, `on_sale`, `sold_out`, `closed`) to events, and `?status=` and `?category=` filters to `GET /api/events/`. The list omits the long text that `GET /api/events/<uuid>/` returns.
 - Add `GET /api/auth/me/` and `GET /api/me/orders/`. Orders include an event summary, the latest payment, and the issued tickets.
+- Add the Next.js storefront in `frontend/`:
+  - Pages for the event list, event details with holding and a 5-minute countdown, the mock gateway's payment page, an order page that follows the payment until the tickets are issued, my tickets with QR codes, sign in, and sign up.
+  - The browser holds only an encrypted httpOnly session cookie. The server keeps the JWTs, refreshes the access token before it expires, and sends `BFF-Secret` and `BFF-Client-IP` with every API call.
+  - Holds and checkouts send a new idempotency key per attempt and reuse it when a response is lost.
+  - Every API call has a 10-second timeout, and error messages show the API's `Correlation-ID`.
+- Add the frontend CI job: lint, typecheck, production build, and a dependency audit.
 - Add `DJANGO_BFF_SHARED_SECRET`. A request that carries it in `BFF-Secret` is counted under the IP in `BFF-Client-IP` by the IP throttles and the audit log, so buyers behind the frontend no longer share one bucket. Production refuses a secret shorter than 32 bytes.
 
 ### Changed
