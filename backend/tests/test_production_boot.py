@@ -14,6 +14,9 @@ PRODUCTION_ENV = {
     'DJANGO_ALLOWED_HOSTS': 'api.example.test',
     'DJANGO_DATABASE_URL': 'postgres://user:pass@db.example.test:5432/ticketrush',
     'DJANGO_REDIS_URL': 'redis://redis.example.test:6379/0',
+    'DJANGO_PUBLIC_API_URL': 'https://api.example.test',
+    'DJANGO_MOCK_GATEWAY_WEBHOOK_SECRET': 'w' * 32,
+    'DJANGO_TICKET_SIGNING_KEY': 't' * 50,
 }
 
 
@@ -43,3 +46,10 @@ def test_production_settings_refuse_to_boot_without_a_database():
 
     assert result.returncode != 0
     assert 'DJANGO_DATABASE_URL is required' in result.stderr
+
+
+def test_production_settings_refuse_to_boot_with_an_unregistered_payment_gateway():
+    result = _load_settings(PRODUCTION_ENV | {'DJANGO_PAYMENT_GATEWAY': 'omise'})
+
+    assert result.returncode != 0
+    assert "no payment gateway adapter is registered for ['omise']" in result.stderr

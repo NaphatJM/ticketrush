@@ -1,159 +1,159 @@
-<mxfile host="drawio">
+<mxfile host="app.diagrams.net">
   <diagram id="infrastructure" name="Infrastructure">
-    <mxGraphModel adaptiveColors="auto" dx="1500" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1420" pageHeight="1010" math="0" shadow="0">
+    <mxGraphModel dx="2394" dy="1009" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1420" pageHeight="1010" math="0" shadow="0" adaptiveColors="auto">
       <root>
         <mxCell id="0" />
-        <mxCell id="conn" value="Connections" parent="0" />
-        <mxCell id="comp" value="Components" parent="0" />
-        <mxCell id="title" value="&lt;b&gt;TicketRush · Infrastructure &amp;amp; deployment&lt;/b&gt;" style="text;html=1;fontSize=20;align=left;verticalAlign=middle;" vertex="1" parent="comp">
-          <mxGeometry x="20" y="0" width="560" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="users" value="ผู้ใช้ (Internet)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="comp">
-          <mxGeometry x="20" y="90" width="140" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="locust" value="Locust&lt;br&gt;(laptop / CI runner)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;dashed=1;" vertex="1" parent="comp">
-          <mxGeometry x="20" y="180" width="140" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="omise" value="Omise API (test)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="comp">
-          <mxGeometry x="20" y="370" width="130" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="legend" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;solid = request / data&lt;br&gt;dashed = telemetry" style="rounded=0;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=none;strokeColor=#999999;" vertex="1" parent="comp">
-          <mxGeometry x="20" y="600" width="210" height="70" as="geometry" />
-        </mxCell>
-        <mxCell id="vercel" value="Vercel · auto-deploy from GitHub" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#eeeeee;strokeColor=#333333;fontStyle=1;collapsible=0;" vertex="1" parent="comp">
-          <mxGeometry x="200" y="50" width="340" height="130" as="geometry" />
-        </mxCell>
-        <mxCell id="cdn" value="Edge Network / CDN&lt;br&gt;TLS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" vertex="1" parent="vercel">
-          <mxGeometry x="15" y="40" width="150" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="fn" value="Next.js Functions&lt;br&gt;(region sin1)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" vertex="1" parent="vercel">
-          <mxGeometry x="180" y="40" width="150" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="railway" value="Railway · production environment" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#f3e5f5;strokeColor=#7b1fa2;fontStyle=1;collapsible=0;" vertex="1" parent="comp">
-          <mxGeometry x="260" y="260" width="820" height="540" as="geometry" />
-        </mxCell>
-        <mxCell id="app" value="App services · one Docker image, different start commands" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#ffffff;strokeColor=#7b1fa2;collapsible=0;" vertex="1" parent="railway">
-          <mxGeometry x="20" y="45" width="780" height="170" as="geometry" />
-        </mxCell>
-        <mxCell id="web" value="&lt;b&gt;web&lt;/b&gt; (public domain)&lt;br&gt;Django + gunicorn&lt;br&gt;healthcheck /system/readiness/&lt;br&gt;pre-deploy: migrate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="app">
-          <mxGeometry x="15" y="40" width="225" height="110" as="geometry" />
-        </mxCell>
-        <mxCell id="wc" value="&lt;b&gt;worker-critical&lt;/b&gt;&lt;br&gt;celery -Q critical&lt;br&gt;acks_late" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="app">
-          <mxGeometry x="255" y="40" width="165" height="110" as="geometry" />
-        </mxCell>
-        <mxCell id="beat" value="&lt;b&gt;beat&lt;/b&gt;&lt;br&gt;replicas = 1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="app">
-          <mxGeometry x="435" y="40" width="150" height="110" as="geometry" />
-        </mxCell>
-        <mxCell id="wb" value="&lt;b&gt;worker-bulk&lt;/b&gt;&lt;br&gt;celery -Q bulk" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="app">
-          <mxGeometry x="600" y="40" width="165" height="110" as="geometry" />
-        </mxCell>
-        <mxCell id="priv" value="Data · private network only (*.railway.internal)" style="swimlane;startSize=26;html=1;rounded=1;dashed=1;fillColor=none;strokeColor=#7b1fa2;collapsible=0;" vertex="1" parent="railway">
-          <mxGeometry x="20" y="250" width="780" height="190" as="geometry" />
-        </mxCell>
-        <mxCell id="pg" value="PostgreSQL&lt;br&gt;volume · daily backup" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="priv">
-          <mxGeometry x="100" y="50" width="220" height="115" as="geometry" />
-        </mxCell>
-        <mxCell id="rd" value="Redis&lt;br&gt;AOF persistence" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="priv">
-          <mxGeometry x="460" y="50" width="220" height="115" as="geometry" />
-        </mxCell>
-        <mxCell id="secrets" value="Secrets live in Railway variables, never in the image or repo" style="shape=note;whiteSpace=wrap;html=1;size=14;fillColor=#ffffff;strokeColor=#999999;" vertex="1" parent="railway">
-          <mxGeometry x="20" y="460" width="780" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="resend" value="Resend (email)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="comp">
-          <mxGeometry x="1160" y="370" width="200" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="grafana" value="Grafana Cloud" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;collapsible=0;" vertex="1" parent="comp">
-          <mxGeometry x="1140" y="480" width="260" height="320" as="geometry" />
-        </mxCell>
-        <mxCell id="otlp" value="OTLP gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" vertex="1" parent="grafana">
-          <mxGeometry x="20" y="40" width="220" height="45" as="geometry" />
-        </mxCell>
-        <mxCell id="stores" value="Mimir · Loki · Tempo&lt;br&gt;dashboards" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" vertex="1" parent="grafana">
-          <mxGeometry x="20" y="100" width="220" height="55" as="geometry" />
-        </mxCell>
-        <mxCell id="syn" value="Synthetics probes&lt;br&gt;uptime of public URLs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" vertex="1" parent="grafana">
-          <mxGeometry x="20" y="170" width="220" height="55" as="geometry" />
-        </mxCell>
-        <mxCell id="alert" value="Alerting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" vertex="1" parent="grafana">
-          <mxGeometry x="20" y="245" width="220" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="notify" value="Discord / LINE / email" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="comp">
-          <mxGeometry x="1160" y="840" width="220" height="50" as="geometry" />
-        </mxCell>
-        <mxCell id="github" value="GitHub Actions · CI/CD" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#eeeeee;strokeColor=#333333;fontStyle=1;collapsible=0;" vertex="1" parent="comp">
-          <mxGeometry x="260" y="860" width="820" height="130" as="geometry" />
-        </mxCell>
-        <mxCell id="repo" value="push / PR" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" vertex="1" parent="github">
-          <mxGeometry x="20" y="45" width="120" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="s_lint" value="lint +&lt;br&gt;type check" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" vertex="1" parent="github">
-          <mxGeometry x="165" y="45" width="90" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="s_test" value="test&lt;br&gt;pytest + DB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" vertex="1" parent="github">
-          <mxGeometry x="275" y="45" width="90" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="s_build" value="build&lt;br&gt;image" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" vertex="1" parent="github">
-          <mxGeometry x="385" y="45" width="90" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="s_deploy" value="deploy&lt;br&gt;Railway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" vertex="1" parent="github">
-          <mxGeometry x="495" y="45" width="90" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="s_smoke" value="smoke&lt;br&gt;test" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" vertex="1" parent="github">
-          <mxGeometry x="605" y="45" width="90" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="s_annot" value="Grafana&lt;br&gt;annotation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" vertex="1" parent="github">
-          <mxGeometry x="715" y="45" width="90" height="60" as="geometry" />
-        </mxCell>
-        <mxCell id="e_users" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="conn" source="users" target="cdn">
+        <mxCell id="conn" parent="0" value="Connections" />
+        <mxCell id="e_users" edge="1" parent="conn" source="users" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="cdn" value="HTTPS">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_cdn" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="conn" source="cdn" target="fn">
+        <mxCell id="e_cdn" edge="1" parent="conn" source="cdn" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="fn">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_fn" value="HTTPS + traceparent" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=0.5;exitY=1;entryX=0.7111;entryY=0;" edge="1" parent="conn" source="fn" target="web">
-          <mxGeometry x="-0.5" relative="1" as="geometry" />
+        <mxCell id="e_fn" edge="1" parent="conn" source="fn" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=0.5;exitY=1;entryX=0.7111;entryY=0;" target="web" value="HTTPS + traceparent">
+          <mxGeometry relative="1" x="-0.5" as="geometry" />
         </mxCell>
-        <mxCell id="e_locust" value="load test" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.5;entryX=0.1556;entryY=0;" edge="1" parent="conn" source="locust" target="web">
-          <mxGeometry x="-0.4" relative="1" as="geometry" />
+        <mxCell id="e_locust" edge="1" parent="conn" source="locust" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.5;entryX=0.1556;entryY=0;" target="web" value="load test">
+          <mxGeometry relative="1" x="-0.4" as="geometry" />
         </mxCell>
-        <mxCell id="e_omise" value="API &amp;amp;&lt;br&gt;webhook" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;startArrow=classic;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="conn" source="omise" target="web">
-          <mxGeometry x="-0.4" relative="1" as="geometry" />
+        <mxCell id="e_omise" edge="1" parent="conn" source="omise" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;startArrow=classic;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="web" value="API &amp;amp;&lt;br&gt;webhook">
+          <mxGeometry relative="1" x="-0.4" as="geometry" />
         </mxCell>
-        <mxCell id="e_pg" value="SQL" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=0.2692;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="conn" source="app" target="pg">
-          <mxGeometry x="-0.5" relative="1" as="geometry" />
+        <mxCell id="e_pg" edge="1" parent="conn" source="app" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=0.2692;exitY=1;entryX=0.5;entryY=0;" target="pg" value="SQL">
+          <mxGeometry relative="1" x="-0.5" as="geometry" />
         </mxCell>
-        <mxCell id="e_rd" value="broker · cache" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=0.7308;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="conn" source="app" target="rd">
-          <mxGeometry x="-0.5" relative="1" as="geometry" />
+        <mxCell id="e_rd" edge="1" parent="conn" source="app" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=0.7308;exitY=1;entryX=0.5;entryY=0;" target="rd" value="broker · cache">
+          <mxGeometry relative="1" x="-0.5" as="geometry" />
         </mxCell>
-        <mxCell id="e_resend" value="email" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="conn" source="wb" target="resend">
-          <mxGeometry x="0.3" relative="1" as="geometry" />
+        <mxCell id="e_resend" edge="1" parent="conn" source="wb" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="resend" value="email">
+          <mxGeometry relative="1" x="0.3" as="geometry" />
         </mxCell>
-        <mxCell id="e_otlp" value="OTLP" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;dashed=1;strokeColor=#b58900;exitX=1;exitY=0.5222;entryX=0;entryY=0.5;" edge="1" parent="conn" source="railway" target="otlp">
+        <mxCell id="e_otlp" edge="1" parent="conn" source="railway" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;dashed=1;strokeColor=#b58900;exitX=1;exitY=0.5222;entryX=0;entryY=0.5;" target="otlp" value="OTLP">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_alert" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="conn" source="alert" target="notify">
+        <mxCell id="e_alert" edge="1" parent="conn" source="alert" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="notify">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_p1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="conn" source="repo" target="s_lint">
+        <mxCell id="e_p1" edge="1" parent="conn" source="repo" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="s_lint">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_p2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="conn" source="s_lint" target="s_test">
+        <mxCell id="e_p2" edge="1" parent="conn" source="s_lint" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="s_test">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_p3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="conn" source="s_test" target="s_build">
+        <mxCell id="e_p3" edge="1" parent="conn" source="s_test" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="s_build">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_p4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="conn" source="s_build" target="s_deploy">
+        <mxCell id="e_p4" edge="1" parent="conn" source="s_build" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="s_deploy">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_p5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="conn" source="s_deploy" target="s_smoke">
+        <mxCell id="e_p5" edge="1" parent="conn" source="s_deploy" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="s_smoke">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_p6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" edge="1" parent="conn" source="s_smoke" target="s_annot">
+        <mxCell id="e_p6" edge="1" parent="conn" source="s_smoke" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" target="s_annot">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e_deploy" value="railway up" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=0.5;exitY=0;entryX=0.6585;entryY=1;" edge="1" parent="conn" source="s_deploy" target="railway">
-          <mxGeometry x="0.4" relative="1" as="geometry" />
+        <mxCell id="e_deploy" edge="1" parent="conn" source="s_deploy" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;labelBackgroundColor=default;exitX=0.5;exitY=0;entryX=0.6585;entryY=1;" target="railway" value="railway up">
+          <mxGeometry relative="1" x="0.4" as="geometry" />
+        </mxCell>
+        <mxCell id="comp" parent="0" value="Components" />
+        <mxCell id="title" parent="comp" style="text;html=1;fontSize=20;align=left;verticalAlign=middle;" value="&lt;b&gt;TicketRush · Infrastructure &amp;amp; deployment&lt;/b&gt;" vertex="1">
+          <mxGeometry height="30" width="560" x="20" as="geometry" />
+        </mxCell>
+        <mxCell id="users" parent="comp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="ผู้ใช้ (Internet)" vertex="1">
+          <mxGeometry height="60" width="140" x="20" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="locust" parent="comp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;dashed=1;" value="Locust&lt;br&gt;(laptop / CI runner)" vertex="1">
+          <mxGeometry height="60" width="140" x="20" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="omise" parent="comp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Omise API (test)" vertex="1">
+          <mxGeometry height="60" width="130" x="20" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" parent="comp" style="rounded=0;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=none;strokeColor=#999999;" value="&lt;b&gt;Legend&lt;/b&gt;&lt;br&gt;solid = request / data&lt;br&gt;dashed = telemetry" vertex="1">
+          <mxGeometry height="70" width="210" x="20" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="vercel" parent="comp" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#eeeeee;strokeColor=#333333;fontStyle=1;collapsible=0;" value="Vercel · auto-deploy from GitHub" vertex="1">
+          <mxGeometry height="130" width="340" x="200" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="cdn" parent="vercel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" value="Edge Network / CDN&lt;br&gt;TLS" vertex="1">
+          <mxGeometry height="60" width="150" x="15" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="fn" parent="vercel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" value="Next.js Functions&lt;br&gt;(region sin1)" vertex="1">
+          <mxGeometry height="60" width="150" x="180" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="railway" parent="comp" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#f3e5f5;strokeColor=#7b1fa2;fontStyle=1;collapsible=0;" value="Railway · production environment" vertex="1">
+          <mxGeometry height="540" width="820" x="260" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="app" parent="railway" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#ffffff;strokeColor=#7b1fa2;collapsible=0;" value="App services · one Docker image, different start commands" vertex="1">
+          <mxGeometry height="170" width="780" x="20" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="web" parent="app" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;b&gt;web&lt;/b&gt; (public domain)&lt;br&gt;Django + gunicorn&lt;br&gt;healthcheck /system/readiness/&lt;br&gt;pre-deploy: migrate" vertex="1">
+          <mxGeometry height="110" width="225" x="15" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="wc" parent="app" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;b&gt;worker-critical&lt;/b&gt;&lt;br&gt;celery -Q critical&lt;br&gt;acks_late" vertex="1">
+          <mxGeometry height="110" width="165" x="255" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="beat" parent="app" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;b&gt;beat&lt;/b&gt;&lt;br&gt;replicas = 1" vertex="1">
+          <mxGeometry height="110" width="150" x="435" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="wb" parent="app" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;b&gt;worker-bulk&lt;/b&gt;&lt;br&gt;celery -Q bulk" vertex="1">
+          <mxGeometry height="110" width="165" x="600" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="priv" parent="railway" style="swimlane;startSize=26;html=1;rounded=1;dashed=1;fillColor=none;strokeColor=#7b1fa2;collapsible=0;" value="Data · private network only (*.railway.internal)" vertex="1">
+          <mxGeometry height="190" width="780" x="20" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="pg" parent="priv" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="PostgreSQL&lt;br&gt;volume · daily backup" vertex="1">
+          <mxGeometry height="115" width="220" x="100" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="rd" parent="priv" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;size=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Redis&lt;br&gt;AOF persistence" vertex="1">
+          <mxGeometry height="115" width="220" x="460" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="secrets" parent="railway" style="shape=note;whiteSpace=wrap;html=1;size=14;fillColor=#ffffff;strokeColor=#999999;" value="Secrets live in Railway variables, never in the image or repo" vertex="1">
+          <mxGeometry height="50" width="780" x="20" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="resend" parent="comp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Resend (email)" vertex="1">
+          <mxGeometry height="60" width="200" x="1160" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="grafana" parent="comp" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;collapsible=0;" value="Grafana Cloud" vertex="1">
+          <mxGeometry height="320" width="260" x="1140" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="otlp" parent="grafana" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" value="OTLP gateway" vertex="1">
+          <mxGeometry height="45" width="220" x="20" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="stores" parent="grafana" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" value="Mimir · Loki · Tempo&lt;br&gt;dashboards" vertex="1">
+          <mxGeometry height="55" width="220" x="20" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="syn" parent="grafana" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" value="Synthetics probes&lt;br&gt;uptime of public URLs" vertex="1">
+          <mxGeometry height="55" width="220" x="20" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="alert" parent="grafana" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d6b656;" value="Alerting" vertex="1">
+          <mxGeometry height="50" width="220" x="20" y="245" as="geometry" />
+        </mxCell>
+        <mxCell id="notify" parent="comp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Discord / LINE / email" vertex="1">
+          <mxGeometry height="50" width="220" x="1160" y="840" as="geometry" />
+        </mxCell>
+        <mxCell id="github" parent="comp" style="swimlane;startSize=28;html=1;rounded=1;fillColor=#eeeeee;strokeColor=#333333;fontStyle=1;collapsible=0;" value="GitHub Actions · CI/CD" vertex="1">
+          <mxGeometry height="130" width="820" x="260" y="860" as="geometry" />
+        </mxCell>
+        <mxCell id="repo" parent="github" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" value="push / PR" vertex="1">
+          <mxGeometry height="60" width="120" x="20" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="s_lint" parent="github" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" value="lint +&lt;br&gt;type check" vertex="1">
+          <mxGeometry height="60" width="90" x="165" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="s_test" parent="github" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" value="test&lt;br&gt;pytest + DB" vertex="1">
+          <mxGeometry height="60" width="90" x="275" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="s_build" parent="github" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" value="build&lt;br&gt;image" vertex="1">
+          <mxGeometry height="60" width="90" x="385" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="s_deploy" parent="github" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" value="deploy&lt;br&gt;Railway" vertex="1">
+          <mxGeometry height="60" width="90" x="495" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="s_smoke" parent="github" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" value="smoke&lt;br&gt;test" vertex="1">
+          <mxGeometry height="60" width="90" x="605" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="s_annot" parent="github" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;" value="Grafana&lt;br&gt;annotation" vertex="1">
+          <mxGeometry height="60" width="90" x="715" y="45" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

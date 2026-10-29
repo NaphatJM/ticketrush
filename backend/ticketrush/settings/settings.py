@@ -17,6 +17,8 @@ LOCAL_APPS = [
     'rest_framework_tracking',
     'reliability',
     'ticketing',
+    'mockgateway',
+    'payments',
 ]
 
 INSTALLED_APPS += [

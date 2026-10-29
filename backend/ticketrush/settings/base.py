@@ -112,6 +112,38 @@ elif DEBUG or _IS_TEST:
 else:
     raise ImproperlyConfigured('DJANGO_REDIS_URL is required when DEBUG is False: it is the Celery broker and the shared throttle store')
 
+# ==== Payments ====
+
+PAYMENT_GATEWAY = configs.str('PAYMENT_GATEWAY', default='mock')
+PAYMENT_WEBHOOK_PROVIDERS = configs.list('PAYMENT_WEBHOOK_PROVIDERS', default=[])
+
+PUBLIC_API_URL = (
+    _required_in_prod(
+        'PUBLIC_API_URL',
+        configs.str('PUBLIC_API_URL', default=''),
+        'payment links and gateway webhooks are addressed to it',
+    )
+    or 'http://localhost:8000'
+).rstrip('/')
+
+MOCK_GATEWAY_WEBHOOK_SECRET = (
+    _required_in_prod(
+        'MOCK_GATEWAY_WEBHOOK_SECRET',
+        configs.str('MOCK_GATEWAY_WEBHOOK_SECRET', default=''),
+        'gateway webhooks are signed and verified with it',
+    )
+    or 'dev-only-webhook-secret'
+)
+
+TICKET_SIGNING_KEY = (
+    _required_in_prod(
+        'TICKET_SIGNING_KEY',
+        configs.str('TICKET_SIGNING_KEY', default=''),
+        'ticket QR codes are signed with it',
+    )
+    or 'dev-only-ticket-key'
+)
+
 # ==== i18n / static ====
 
 LANGUAGE_CODE = 'en-us'
@@ -234,6 +266,8 @@ LOGGING = {
         'audit': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
         'reliability': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
         'ticketing': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
+        'mockgateway': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
+        'payments': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
         'rest_framework_tracking': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
         'utils': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
         'ticketrush': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},

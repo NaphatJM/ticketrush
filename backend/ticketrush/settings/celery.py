@@ -23,15 +23,23 @@ CELERY_TASK_DEFAULT_QUEUE = 'critical'
 CELERY_TASK_DEFAULT_EXCHANGE = 'critical'
 CELERY_TASK_DEFAULT_ROUTING_KEY = 'critical'
 
+CELERY_TASK_ROUTES = {
+    'mockgateway.*': {'queue': 'bulk'},
+    'notify.*': {'queue': 'bulk'},
+}
+
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_BROKER_TRANSPORT_OPTIONS = {
     # Must exceed the hard time limit and every retry countdown, or Redis redelivers tasks still in flight.
     'visibility_timeout': 300,
+    'socket_connect_timeout': 2,
+    'socket_timeout': 5,
 }
 
 CELERY_TASK_ALWAYS_EAGER = configs.bool('CELERY_TASK_ALWAYS_EAGER', default=False)
 CELERY_TASK_EAGER_PROPAGATES = True
 
 CELERY_BEAT_SCHEDULE: dict[str, dict] = {
+    'relay-outbox': {'task': 'outbox.relay', 'schedule': 2.0, 'options': {'queue': 'critical', 'expires': 2}},
     'expire-holds': {'task': 'holds.expire_sweeper', 'schedule': 30.0, 'options': {'queue': 'critical', 'expires': 30}},
 }
