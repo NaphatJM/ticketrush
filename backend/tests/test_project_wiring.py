@@ -78,9 +78,8 @@ def test_the_openapi_schema_generates(client):
     assert response.status_code == 200
 
 
-def test_admin_is_not_on_the_default_path(client):
-    assert client.get('/admin/').status_code == 404
-    assert client.get('/staff-admin/').status_code == 302
+def test_admin_is_served_at_admin(client):
+    assert client.get('/admin/').status_code == 302
 
 
 def test_every_response_returns_the_correlation_id(client):

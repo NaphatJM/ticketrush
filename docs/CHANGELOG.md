@@ -66,5 +66,6 @@ All notable changes to TicketRush are documented here. The format follows
 - Rename the health endpoints to `/system/healthcheck/`, `/system/readiness/`, and `/system/dependencies/` in the design documents and diagrams.
 - Ticket emails are sent from `noreply@mail.naphat.online`, a Resend-verified domain, so any buyer receives them.
 - The production API is served at `https://api.ticketrush.naphat.online`.
+- Move the Django admin from `/staff-admin/` to `/admin/`.
 - Correct the data model diagram to the real columns: `bigint` primary and foreign keys, a unique `uuid` per domain row, and `created_on` and `updated_on` timestamps. The sequence diagram uses the real API paths, and the docs name `payment.uuid` as the gateway idempotency key.
 - The OpenAPI docs now describe each endpoint with its own summary, description, and tag, declare the `{status, data}` envelope and the paginated list shape that the API actually returns, and list the error responses and the `Idempotent-Replayed` header.

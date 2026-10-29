@@ -52,4 +52,4 @@ Environment variables are listed in [backend/.env.example](./backend/.env.exampl
 | `/system/dependencies/` | PostgreSQL and Redis status; needs `X-Readiness-Token` or a staff session |
 | `/system/docs/` | OpenAPI documentation |
 | `/api/` | Auth, events, holds, checkout, orders, tickets, and payment webhooks; see `/system/docs/` |
-| `/staff-admin/` | Django admin for organizers |
+| `/admin/` | Django admin for organizers |

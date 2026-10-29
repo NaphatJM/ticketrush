@@ -57,8 +57,8 @@ def test_the_admin_never_shows_a_stored_refresh_token():
     client = APIClient()
     client.force_login(staff)
 
-    listing = client.get('/staff-admin/token_blacklist/outstandingtoken/')
-    detail = client.get(f'/staff-admin/token_blacklist/outstandingtoken/{token.pk}/change/')
+    listing = client.get('/admin/token_blacklist/outstandingtoken/')
+    detail = client.get(f'/admin/token_blacklist/outstandingtoken/{token.pk}/change/')
 
     assert listing.status_code == detail.status_code == 200
     assert refresh not in listing.content.decode()
