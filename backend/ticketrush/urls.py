@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.urls import include
 from django.urls import path
 from drf_spectacular.views import SpectacularAPIView
 from drf_spectacular.views import SpectacularSwaggerView
@@ -8,6 +9,7 @@ from . import views
 
 urlpatterns = [
     path('staff-admin/', admin.site.urls),
+    path('api/', include('ticketing.urls')),
     path('system/healthcheck/', views.healthcheck, name='healthcheck'),
     path('system/readiness/', views.readiness, name='readiness'),
     path('system/dependencies/', views.dependencies, name='dependencies'),

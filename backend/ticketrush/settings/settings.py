@@ -15,6 +15,8 @@ LOCAL_APPS = [
     'accounts',
     'audit',
     'rest_framework_tracking',
+    'reliability',
+    'ticketing',
 ]
 
 INSTALLED_APPS += [

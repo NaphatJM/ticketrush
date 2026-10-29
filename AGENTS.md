@@ -70,6 +70,6 @@ The backend follows the team's Django house standard:
 
 ## Git
 
-- `main` is production. Work on a short-lived branch and merge through a pull request.
+- `main` is production. Day-to-day work is committed on `develop`, and `develop` reaches `main` only through a pull request with green CI.
 - Commit messages follow Conventional Commits, for example `feat(holds): release expired holds in a beat task`.
 - Do not commit or push without explicit approval from the repository owner.

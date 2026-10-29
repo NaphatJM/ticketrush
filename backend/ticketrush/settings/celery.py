@@ -32,4 +32,6 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
 CELERY_TASK_ALWAYS_EAGER = configs.bool('CELERY_TASK_ALWAYS_EAGER', default=False)
 CELERY_TASK_EAGER_PROPAGATES = True
 
-CELERY_BEAT_SCHEDULE: dict[str, dict] = {}
+CELERY_BEAT_SCHEDULE: dict[str, dict] = {
+    'expire-holds': {'task': 'holds.expire_sweeper', 'schedule': 30.0, 'options': {'queue': 'critical', 'expires': 30}},
+}
