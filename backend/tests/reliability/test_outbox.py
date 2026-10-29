@@ -121,7 +121,7 @@ def test_staff_can_replay_a_dead_letter_once(client, apply_async, django_capture
 
     with django_capture_on_commit_callbacks(execute=True):
         for _ in range(2):
-            client.post('/staff-admin/reliability/deadletter/', {'action': 'replay', '_selected_action': [letter.pk]})
+            client.post('/admin/reliability/deadletter/', {'action': 'replay', '_selected_action': [letter.pk]})
 
     apply_async.assert_called_once_with(kwargs={'webhook_event_id': 3})
     letter.refresh_from_db()

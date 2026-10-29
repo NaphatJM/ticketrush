@@ -18,3 +18,20 @@ class PageNumberPagination(BasePageNumberPagination):
                 'data': data,
             }
         )
+
+    def get_paginated_response_schema(self, schema: dict) -> dict:
+        link = {'type': 'string', 'format': 'uri', 'nullable': True}
+        return {
+            'type': 'object',
+            'required': ['status', 'links', 'count', 'data'],
+            'properties': {
+                'status': {
+                    'type': 'object',
+                    'required': ['code', 'message'],
+                    'properties': {'code': {'type': 'string', 'example': CODE_SUCCESS}, 'message': {'type': 'string'}},
+                },
+                'links': {'type': 'object', 'required': ['next', 'previous'], 'properties': {'next': link, 'previous': link}},
+                'count': {'type': 'integer'},
+                'data': schema,
+            },
+        }

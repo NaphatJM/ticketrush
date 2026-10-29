@@ -23,7 +23,7 @@ Code must keep these true. A change that weakens one needs a design discussion f
 - Mutating endpoints accept an idempotency key, and a repeated key returns the original result. Auth endpoints are exempt: register is settled by the unique username, and login and refresh change no domain state.
 - Jobs triggered by a domain change are written to the outbox in the same transaction as that change.
 - Celery tasks tolerate duplicate delivery and run with `acks_late`. Ticket issuing and email use separate queues. Keep every retry countdown below the Redis `visibility_timeout`, or the broker redelivers the task while it waits.
-- Calls to the payment gateway send `payment.id` as the gateway idempotency key.
+- Calls to the payment gateway send `payment.uuid` as the gateway idempotency key.
 - Webhooks are verified by signature before any processing and deduplicated by provider event ID.
 - Every external call has a timeout. Never widen a failure into a silent success.
 - Every log line carries the request `cid`. Logs are structured JSON.
