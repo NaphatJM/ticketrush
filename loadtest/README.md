@@ -39,7 +39,7 @@ Locust sends `BFF-Secret` and a distinct `BFF-Client-IP` per buyer, as the Verce
 
 ## Runs
 
-Keep each run under 10 minutes; Railway bills CPU time. Write results to `results/<date>/`.
+Keep each run under 10 minutes; Railway bills CPU time. Write results to `results/<date>/`, which git ignores.
 
 ### P1 Flash sale (performance)
 
