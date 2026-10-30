@@ -73,11 +73,14 @@ All notable changes to TicketRush are documented here. The format follows
 - Add the frontend CI job: lint, typecheck, production build, and a dependency audit.
 - Add `DJANGO_BFF_SHARED_SECRET`. A request that carries it in `BFF-Secret` is counted under the IP in `BFF-Client-IP` by the IP throttles and the audit log, so buyers behind the frontend no longer share one bucket. Production refuses a secret shorter than 32 bytes.
 - Add the `seed_mockdata` and `purge_mockdata` management commands: an idempotent demo catalog of 8 small and 6 medium events across every sale status plus drafts, optional load-test buyers, and a purge that removes mock events with their purchases and audit-logs both actions.
+- Add Locust load tests in `loadtest/`: a 1,000-buyer flash sale, weighted user journeys, and reliability runs under mock gateway faults. Locust sends BFF headers so per-IP throttles see one client per buyer.
+- Add the `seed_loadtest`, `loadtest_verify`, and `loadtest_sample` management commands: a purge-able event per run, a read-only stock and ticket invariant check that exits 1 on failure, and CSV readings of database connections and queue backlogs.
 
 ### Changed
 - Rename the health endpoints to `/system/healthcheck/`, `/system/readiness/`, and `/system/dependencies/` in the design documents and diagrams.
 - Ticket emails are sent from `noreply@mail.naphat.online`, a Resend-verified domain, so any buyer receives them.
 - The production API is served at `https://api.ticketrush.naphat.online`.
+- The storefront is served at `https://ticketrush.naphat.online` from Vercel.
 - Move the Django admin from `/staff-admin/` to `/admin/`.
 - Redesign the ticket email: event banner, date and time range, venue with a map link, one ticket card per QR code, an order summary with unit price and payment time, and the event's important info. The plain-text part carries the same details.
 - The `event` field of an order is now an event summary object instead of a UUID, and tickets embed the same summary with the banner and venue.

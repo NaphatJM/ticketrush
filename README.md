@@ -15,7 +15,7 @@ docs/       System design and diagrams
 
 | | |
 | --- | --- |
-| Live app | _frontend not deployed yet_ |
+| Live app | <https://ticketrush.naphat.online> |
 | API | <https://api.ticketrush.naphat.online> |
 | API docs | <https://api.ticketrush.naphat.online/system/docs/> |
 
