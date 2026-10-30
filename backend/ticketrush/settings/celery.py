@@ -23,8 +23,9 @@ CELERY_TASK_DEFAULT_QUEUE = 'critical'
 CELERY_TASK_DEFAULT_EXCHANGE = 'critical'
 CELERY_TASK_DEFAULT_ROUTING_KEY = 'critical'
 
+# Webhook delivery confirms payments, so it stays off `bulk`, where rate-limited emails can hold every prefetch slot.
 CELERY_TASK_ROUTES = {
-    'mockgateway.*': {'queue': 'bulk'},
+    'mockgateway.*': {'queue': 'gateway'},
     'notify.*': {'queue': 'bulk'},
 }
 
@@ -42,5 +43,6 @@ CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_BEAT_SCHEDULE: dict[str, dict] = {
     'relay-outbox': {'task': 'outbox.relay', 'schedule': 2.0, 'options': {'queue': 'critical', 'expires': 2}},
     'expire-holds': {'task': 'holds.expire_sweeper', 'schedule': 30.0, 'options': {'queue': 'critical', 'expires': 30}},
+    'reconcile-payments': {'task': 'payments.reconcile', 'schedule': 30.0, 'options': {'queue': 'critical', 'expires': 30}},
     'flush-expired-tokens': {'task': 'accounts.flush_expired_tokens', 'schedule': 86400.0, 'options': {'queue': 'bulk', 'expires': 3600}},
 }

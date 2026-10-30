@@ -19,6 +19,7 @@ class Payment(BaseModel):
     status = models.CharField(_('status'), max_length=16, choices=Status.choices, default=Status.CREATED)
     amount_satang = models.PositiveIntegerField(_('amount (satang)'))
     expires_at = models.DateTimeField(_('expires at'))
+    reconciled_at = models.DateTimeField(_('reconciled at'), null=True, blank=True)
 
     class Meta:
         verbose_name = _('payment')

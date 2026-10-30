@@ -48,7 +48,7 @@ OUTBOX_RELAY_GRACE = timedelta(seconds=10)
 # Kombu's Redis transport keeps priorities 3, 6 and 9 in their own lists next to the plain queue name.
 KOMBU_PRIORITY_SEPARATOR = '\x06\x16'
 KOMBU_PRIORITY_STEPS = (3, 6, 9)
-CELERY_QUEUES = ('critical', 'bulk')
+CELERY_QUEUES = ('critical', 'gateway', 'bulk')
 
 
 @transaction.atomic
@@ -120,6 +120,12 @@ def _verify(event: Event, *, since: datetime | None, now: datetime) -> dict:
     over_limit = counted.values('user').annotate(total=Sum('quantity')).filter(total__gt=event.max_per_user)
     double_charged = payments.filter(status=Payment.Status.SUCCEEDED).values('order').annotate(n=Count('id')).filter(n__gt=1)
     dead_letters = DeadLetter.objects.filter(failed_at__gte=since) if since else DeadLetter.objects.all()
+    # Charges the gateway settled whose payment was never recorded as succeeded, by webhook or by reconcile.
+    unrecorded = (
+        MockCharge.objects.filter(idempotency_key__in=payment_keys, status=MockCharge.Status.SUCCEEDED)
+        .exclude(idempotency_key__in=succeeded_keys)
+        .count()
+    )
 
     checks = {
         'available_not_negative': event.available >= 0,
@@ -134,6 +140,7 @@ def _verify(event: Event, *, since: datetime | None, now: datetime) -> dict:
         'webhooks_processed': not WebhookEvent.objects.filter(payment_key__in=payment_keys, processed_at__isnull=True).exists(),
         'outbox_drained': not OutboxMessage.objects.filter(published_at__isnull=True, created_on__lt=now - OUTBOX_RELAY_GRACE).exists(),
         'no_dead_letters': not dead_letters.exists(),
+        'charges_recorded': unrecorded == 0,
     }
     return {
         'event': str(event.uuid),
@@ -146,10 +153,7 @@ def _verify(event: Event, *, since: datetime | None, now: datetime) -> dict:
         'payments': _count_by_status(payments),
         'tickets': paid.aggregate(total=Sum('issued'))['total'] or 0,
         'overdue_active_holds': holds.filter(status=Hold.Status.ACTIVE, expires_at__lt=now).count(),
-        # Charges the gateway settled whose webhook never paid the order; there is no reconcile job to recover them.
-        'charges_succeeded_unrecorded': MockCharge.objects.filter(idempotency_key__in=payment_keys, status=MockCharge.Status.SUCCEEDED)
-        .exclude(idempotency_key__in=succeeded_keys)
-        .count(),
+        'charges_succeeded_unrecorded': unrecorded,
     }
 
 
@@ -164,6 +168,7 @@ SAMPLE_FIELDS = (
     'db_idle_in_transaction',
     'db_max_connections',
     'queue_critical',
+    'queue_gateway',
     'queue_bulk',
     'outbox_unpublished',
     'webhooks_unprocessed',

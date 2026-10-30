@@ -76,6 +76,9 @@ All notable changes to TicketRush are documented here. The format follows
 - Add Locust load tests in `loadtest/`: a 1,000-buyer flash sale, weighted user journeys, and reliability runs under mock gateway faults. Locust sends BFF headers so per-IP throttles see one client per buyer.
 - Add `loadtest/run_all.sh`, which runs every load test scenario against production in one go: it seeds each run, sets and resets the gateway faults, samples saturation, and verifies the invariants.
 - Add the `seed_loadtest`, `loadtest_verify`, and `loadtest_sample` management commands: a purge-able event per run, a read-only stock and ticket invariant check that exits 1 on failure, and CSV readings of database connections and queue backlogs.
+- Add `scripts/smoke_test.py`, which buys one ticket end to end against a live API and exits 1 on the first failed step.
+- Add the payment reconcile job: `payments.reconcile` runs every 30 seconds on `critical`, asks the gateway for the status of open payments untouched for 60 seconds, and records each settled charge as a webhook event, so a lost webhook still pays the order and issues its tickets. Lookups have a timeout, go through the gateway circuit breaker, and change nothing when they fail. Deploy: apply migration `payments/0002` before the new workers start, since they read `payments.reconciled_at`.
+- `loadtest_verify` fails its new `charges_recorded` check when the gateway settled a charge that no payment recorded.
 
 ### Changed
 - Rename the health endpoints to `/system/healthcheck/`, `/system/readiness/`, and `/system/dependencies/` in the design documents and diagrams.
@@ -87,4 +90,7 @@ All notable changes to TicketRush are documented here. The format follows
 - The `event` field of an order is now an event summary object instead of a UUID, and tickets embed the same summary with the banner and venue.
 - Correct the data model diagram to the real columns: `bigint` primary and foreign keys, a unique `uuid` per domain row, and `created_on` and `updated_on` timestamps. The sequence diagram uses the real API paths, and the docs name `payment.uuid` as the gateway idempotency key.
 - Gunicorn replaces a worker after 20,000 requests instead of 1,000, set by `GUNICORN_MAX_REQUESTS`. At 1,000 the flash sale load test restarted a worker every 5 seconds and stalled the API.
+- Mock gateway webhooks run on their own `gateway` queue, consumed by `worker-critical`, instead of `bulk`. Rate-limited ticket emails held every prefetch slot on `bulk`, so payment confirmations waited behind them (journey load test: time to ticket p50 29 s with 270 tasks queued on `bulk`). `loadtest_sample` reports `queue_gateway`. Deploy: start `worker-critical` with `-Q critical,gateway` before this release.
+- The PostgreSQL connection budget in `docs/fail-safe.md` counts every gunicorn thread and every Celery child, since each keeps its own connection.
+- The order page polls for payment every 1.5 s four times, then every 3 s four times, then every 5 s, for at least the same 2 minutes, and the journey load test polls on the same schedule. Order polls were 60% of journey requests.
 - The OpenAPI docs now describe each endpoint with its own summary, description, and tag, declare the `{status, data}` envelope and the paginated list shape that the API actually returns, and list the error responses and the `Idempotent-Replayed` header.

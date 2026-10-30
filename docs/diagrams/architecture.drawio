@@ -150,7 +150,7 @@
         <mxCell id="k_beat" parent="celery" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;align=left;spacingLeft=10;" value="&lt;b&gt;beat&lt;/b&gt; (scheduler)&lt;br&gt;- outbox relay&lt;br&gt;- hold expiry sweeper&lt;br&gt;- payment reconcile&lt;br&gt;- queue depth metrics" vertex="1">
           <mxGeometry height="130" width="210" x="20" y="45" as="geometry" />
         </mxCell>
-        <mxCell id="k_crit" parent="celery" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;align=left;spacingLeft=10;" value="&lt;b&gt;worker-critical&lt;/b&gt;&lt;br&gt;queue: critical&lt;br&gt;- confirm payment&lt;br&gt;- issue ticket QR" vertex="1">
+        <mxCell id="k_crit" parent="celery" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;align=left;spacingLeft=10;" value="&lt;b&gt;worker-critical&lt;/b&gt;&lt;br&gt;queues: critical, gateway&lt;br&gt;- confirm payment&lt;br&gt;- issue ticket QR&lt;br&gt;- deliver mock webhooks" vertex="1">
           <mxGeometry height="130" width="210" x="250" y="45" as="geometry" />
         </mxCell>
         <mxCell id="k_bulk" parent="celery" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;align=left;spacingLeft=10;" value="&lt;b&gt;worker-bulk&lt;/b&gt;&lt;br&gt;queue: bulk&lt;br&gt;- send email&lt;br&gt;- CSV export&lt;br&gt;- dead letter queue" vertex="1">
