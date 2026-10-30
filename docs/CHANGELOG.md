@@ -74,6 +74,7 @@ All notable changes to TicketRush are documented here. The format follows
 - Add `DJANGO_BFF_SHARED_SECRET`. A request that carries it in `BFF-Secret` is counted under the IP in `BFF-Client-IP` by the IP throttles and the audit log, so buyers behind the frontend no longer share one bucket. Production refuses a secret shorter than 32 bytes.
 - Add the `seed_mockdata` and `purge_mockdata` management commands: an idempotent demo catalog of 8 small and 6 medium events across every sale status plus drafts, optional load-test buyers, and a purge that removes mock events with their purchases and audit-logs both actions.
 - Add Locust load tests in `loadtest/`: a 1,000-buyer flash sale, weighted user journeys, and reliability runs under mock gateway faults. Locust sends BFF headers so per-IP throttles see one client per buyer.
+- Add `loadtest/run_all.sh`, which runs every load test scenario against production in one go: it seeds each run, sets and resets the gateway faults, samples saturation, and verifies the invariants.
 - Add the `seed_loadtest`, `loadtest_verify`, and `loadtest_sample` management commands: a purge-able event per run, a read-only stock and ticket invariant check that exits 1 on failure, and CSV readings of database connections and queue backlogs.
 
 ### Changed
