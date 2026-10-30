@@ -3,6 +3,7 @@ from django.utils.functional import cached_property
 from drf_spectacular.utils import OpenApiParameter
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.utils import extend_schema_view
+from opentelemetry import metrics
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
@@ -25,6 +26,11 @@ from .serializers import HoldCreateSerializer
 from .serializers import HoldSerializer
 from .throttles import HoldIPThrottle
 from .throttles import HoldUserThrottle
+
+
+hold_requests = metrics.get_meter(__name__).create_counter(
+    'ticketrush.hold.requests', unit='{request}', description='Hold requests by result: ok, replayed, or the lower-cased error code.'
+)
 
 
 IDEMPOTENCY_KEY_PARAMETER = OpenApiParameter(
@@ -149,6 +155,11 @@ class HoldCreateView(APIView):
         )
         return Response(encapsulation_result(result.body), status=result.status_code, headers={'Idempotent-Replayed': str(result.replayed).lower()})
 
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super().finalize_response(request, response, *args, **kwargs)
+        hold_requests.add(1, {'result': _hold_result(response)})
+        return response
+
 
 class HoldReleaseView(APIView):
     @extend_schema(
@@ -161,3 +172,14 @@ class HoldReleaseView(APIView):
     def delete(self, request: Request, uuid) -> Response:
         hold = services.release_hold(user=request.user, hold_uuid=uuid)
         return Response(encapsulation_result(HoldSerializer(hold).data))
+
+
+def _hold_result(response) -> str:
+    if response.get('Idempotent-Replayed') == 'true':
+        return 'replayed'
+    if response.status_code < 400:
+        return 'ok'
+    try:
+        return response.data['status']['code'].lower()
+    except (KeyError, TypeError, AttributeError):
+        return str(response.status_code)

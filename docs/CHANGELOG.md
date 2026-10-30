@@ -75,6 +75,11 @@ All notable changes to TicketRush are documented here. The format follows
 - Add the `seed_mockdata` and `purge_mockdata` management commands: an idempotent demo catalog of 8 small and 6 medium events across every sale status plus drafts, optional load-test buyers, and a purge that removes mock events with their purchases and audit-logs both actions.
 - Add Locust load tests in `loadtest/`: a 1,000-buyer flash sale, weighted user journeys, and reliability runs under mock gateway faults. Locust sends BFF headers so per-IP throttles see one client per buyer.
 - Add the `seed_loadtest`, `loadtest_verify`, and `loadtest_sample` management commands: a purge-able event per run, a read-only stock and ticket invariant check that exits 1 on failure, and CSV readings of database connections and queue backlogs.
+- Add OpenTelemetry export over OTLP/HTTP, enabled by `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS`:
+  - Traces for Django, PostgreSQL, Redis, Celery, and outgoing HTTP. Request spans carry the `cid`, and the context travels into Celery tasks and the mock gateway's webhook.
+  - Logs exported over OTLP with the `cid`. JSON log lines gain `trace_id` and `span_id`.
+  - Metrics: hold requests by result, gateway charges by outcome with latency, webhooks by result, and task outcomes including dead letters. Beat also reports queue lengths, outbox backlog and age, pending dead letters, unprocessed webhooks, stock per event on sale by event UUID, and seconds since it last sent a task.
+  - Each gunicorn worker, Celery pool process, and beat starts its exporters after fork. Health and readiness probes are not traced, and export failures are logged to stdout.
 
 ### Changed
 - Rename the health endpoints to `/system/healthcheck/`, `/system/readiness/`, and `/system/dependencies/` in the design documents and diagrams.

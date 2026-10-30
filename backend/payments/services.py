@@ -1,4 +1,5 @@
 import logging
+import time
 from collections.abc import Mapping
 from datetime import timedelta
 
@@ -6,6 +7,7 @@ from django.db import IntegrityError
 from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
+from opentelemetry import metrics
 from rest_framework.exceptions import NotFound
 
 from audit.constants import ActivityVerb
@@ -42,6 +44,20 @@ GATEWAY_TIMEOUT_SECONDS = 5.0
 GATEWAY_ATTEMPTS = 2
 
 gateway_breaker = CircuitBreaker(failure_threshold=5, reset_after_seconds=30)
+
+_meter = metrics.get_meter(__name__)
+gateway_charges = _meter.create_counter(
+    'ticketrush.gateway.charges', unit='{call}', description='Charge calls by outcome: ok, error, or circuit_open.'
+)
+gateway_charge_duration = _meter.create_histogram(
+    'ticketrush.gateway.charge.duration',
+    unit='s',
+    description='Duration of each charge attempt.',
+    explicit_bucket_boundaries_advisory=[0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
+)
+webhooks_received = _meter.create_counter(
+    'ticketrush.webhooks.received', unit='{webhook}', description='Webhooks by result: accepted, duplicate, rejected.'
+)
 
 _TOPICS = {CHARGE_SUCCEEDED: 'payments.process_succeeded', CHARGE_FAILED: 'payments.process_failed'}
 _OPEN_PAYMENT = (Payment.Status.CREATED, Payment.Status.PENDING)
@@ -88,21 +104,31 @@ def submit_charge(payment: Payment) -> Payment:
 
 
 def _create_charge(payment: Payment) -> Charge:
-    if not gateway_breaker.allow():
-        raise PaymentsUnavailable
     gateway = get_gateway()
+    if not gateway_breaker.allow():
+        gateway_charges.add(1, {'provider': gateway.provider, 'outcome': 'circuit_open'})
+        raise PaymentsUnavailable
     for attempt in range(1, GATEWAY_ATTEMPTS + 1):
+        started = time.monotonic()
         try:
             charge = gateway.create_charge(
                 idempotency_key=str(payment.uuid), amount_satang=payment.amount_satang, expires_at=payment.expires_at, timeout=GATEWAY_TIMEOUT_SECONDS
             )
         except GatewayUnavailableError as exc:
+            _record_charge(gateway.provider, 'error', started)
             logger.warning('gateway charge failed', extra={'attempt': attempt, 'provider': gateway.provider}, exc_info=exc)
             continue
+        _record_charge(gateway.provider, 'ok', started)
         gateway_breaker.record_success()
         return charge
     gateway_breaker.record_failure()
     raise PaymentsUnavailable
+
+
+def _record_charge(provider: str, outcome: str, started: float) -> None:
+    attributes = {'provider': provider, 'outcome': outcome}
+    gateway_charges.add(1, attributes)
+    gateway_charge_duration.record(time.monotonic() - started, attributes)
 
 
 def receive_webhook(*, provider: str, body: bytes, headers: Mapping[str, str]) -> bool:
@@ -114,6 +140,7 @@ def receive_webhook(*, provider: str, body: bytes, headers: Mapping[str, str]) -
         notice = gateway.parse_webhook(body=body, headers=headers)
     except InvalidWebhookError as exc:
         logger.warning('webhook rejected', extra={'provider': provider, 'reason': str(exc)})
+        webhooks_received.add(1, {'provider': provider, 'result': 'rejected'})
         raise InvalidWebhookSignature from exc
 
     with transaction.atomic():
@@ -128,10 +155,12 @@ def receive_webhook(*, provider: str, body: bytes, headers: Mapping[str, str]) -
                 )
         except IntegrityError:
             logger.info('duplicate webhook ignored', extra={'provider': provider, 'webhook_event_id': notice.event_id})
+            webhooks_received.add(1, {'provider': provider, 'result': 'duplicate'})
             return False
         topic = _TOPICS.get(notice.event_type)
         if topic is not None:
             outbox.enqueue(topic, {'webhook_event_id': event.pk})
+    webhooks_received.add(1, {'provider': provider, 'result': 'accepted'})
     return True
 
 

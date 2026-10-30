@@ -181,7 +181,7 @@ def sample_saturation(redis_client, *, now: datetime | None = None) -> dict:
         total, active, idle_in_transaction = cursor.fetchone()
         cursor.execute('SHOW max_connections')
         max_connections = int(cursor.fetchone()[0])
-    queues = {f'queue_{name}': _queue_length(redis_client, name) for name in CELERY_QUEUES}
+    queues = {f'queue_{name}': queue_length(redis_client, name) for name in CELERY_QUEUES}
     return {
         'sampled_at': (now or timezone.now()).isoformat(),
         'db_connections': total,
@@ -194,6 +194,6 @@ def sample_saturation(redis_client, *, now: datetime | None = None) -> dict:
     }
 
 
-def _queue_length(redis_client, name: str) -> int:
+def queue_length(redis_client, name: str) -> int:
     keys = [name, *(f'{name}{KOMBU_PRIORITY_SEPARATOR}{step}' for step in KOMBU_PRIORITY_STEPS)]
     return sum(redis_client.llen(key) for key in keys)
