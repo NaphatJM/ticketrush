@@ -78,6 +78,7 @@ All notable changes to TicketRush are documented here. The format follows
 - Rename the health endpoints to `/system/healthcheck/`, `/system/readiness/`, and `/system/dependencies/` in the design documents and diagrams.
 - Ticket emails are sent from `noreply@mail.naphat.online`, a Resend-verified domain, so any buyer receives them.
 - The production API is served at `https://api.ticketrush.naphat.online`.
+- The storefront is served at `https://ticketrush.naphat.online` from Vercel.
 - Move the Django admin from `/staff-admin/` to `/admin/`.
 - Redesign the ticket email: event banner, date and time range, venue with a map link, one ticket card per QR code, an order summary with unit price and payment time, and the event's important info. The plain-text part carries the same details.
 - The `event` field of an order is now an event summary object instead of a UUID, and tickets embed the same summary with the banner and venue.
