@@ -74,3 +74,11 @@ pnpm dev                             # http://localhost:3000
 | `pnpm build` | Production build |
 
 Environment variables are listed in [frontend/.env.example](./frontend/.env.example). `BFF_SHARED_SECRET` must match `DJANGO_BFF_SHARED_SECRET` on the API, or every buyer is throttled under the frontend server's IP.
+
+### Smoke test
+
+```bash
+python scripts/smoke_test.py [--api URL] [--event UUID]
+```
+
+Buys one ticket end to end against a live API (production by default): register, hold with a key replay, checkout, mock payment, and the ticket. It needs only the Python standard library and exits 1 on the first failed step. Each run leaves a user and a paid one-ticket order, so pass `--event` with a mock event to keep real events' stock.

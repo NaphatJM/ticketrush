@@ -10,6 +10,7 @@ TicketRush is a flash-sale ticketing system. The domain is small on purpose; the
 backend/    Django + DRF API, Celery tasks, tests
 frontend/   Next.js app (BFF route handlers call the API)
 loadtest/   Locust scenarios and recorded results
+scripts/    Operational scripts such as the production smoke test
 docs/       System design, diagrams, changelog
 ```
 
