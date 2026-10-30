@@ -95,8 +95,8 @@ Run the journey with 100 users, one fault at a time. Set faults in the admin und
 | R1 | Duplicate webhook rate 0.5 | No extra tickets; `loadtest_verify` passes |
 | R2 | `LOADTEST_REPLAY_RATE=0.3` | Every `REPLAY` entry succeeds; stock is taken once per hold |
 | R3 | Charge error rate 1.0 with charge latency 2,000 ms | Checkout fails with `503 PAYMENTS_UNAVAILABLE`. Each failed checkout makes 2 gateway calls; after 5 failed checkouts in one gunicorn worker its breaker opens and checkout fails without waiting for the gateway. 30 s after the last failure one trial call goes through, and the breaker closes when a trial succeeds |
-| R4 | Charge latency above the 5 s gateway timeout | A checkout fails after 2 attempts of 5 s each and holds one of the 8 gunicorn threads meanwhile, so latency rises across the API until the breaker opens. No payment has two successful charges |
-| R5 | Dropped webhook rate 0.2 | Those orders expire with their holds and the stock returns; `charges_succeeded_unrecorded` counts them. Known gap: there is no reconcile job, so a payment whose webhook is lost is not recovered |
+| R4 | Charge latency above the 5 s gateway timeout | A checkout fails after 2 attempts of 5 s each and holds a gunicorn thread meanwhile, so latency rises across the API until the breaker opens. No payment has two successful charges |
+| R5 | Dropped webhook rate 0.2 | The reconcile job pays those orders within about 90 s of payment, taking the stock back if the hold expired meanwhile; `charges_succeeded_unrecorded` is 0, and `loadtest_verify` fails its `charges_recorded` check otherwise |
 | R6 | Restart `worker-critical` during R1 | Late-acked tasks are redelivered; every paid order still gets its tickets |
 
 ## Verify and sample
@@ -121,7 +121,7 @@ Run the sampler on a worker service rather than `web`, so it does not compete wi
 | Saturation: database connections, queue backlog, outbox, unprocessed webhooks | `loadtest_sample` CSV |
 | CPU, memory, network per service | Railway metrics for `web`, `worker-critical`, `worker-bulk`, Postgres, Redis; screenshot the run window |
 
-The API has 2 gunicorn workers with 4 threads each, so 8 requests run at once; queueing beyond that shows as latency, not as a separate metric. Latency includes the round trip from the Locust machine to Railway; record where Locust ran.
+The API runs `GUNICORN_WORKERS` processes with `GUNICORN_THREADS` threads each (default 2 x 4), so that many requests run at once; record both values with the results. Queueing beyond that shows as latency, not as a separate metric. Latency includes the round trip from the Locust machine to Railway; record where Locust ran.
 
 ## Clean up
 

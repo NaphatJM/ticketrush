@@ -37,12 +37,20 @@ def test_retry_backoff_stays_below_the_visibility_timeout():
     assert RETRY_BACKOFF_MAX_SECONDS < settings.CELERY_BROKER_TRANSPORT_OPTIONS['visibility_timeout']
 
 
-def test_webhook_delivery_runs_on_bulk_and_payment_processing_on_critical():
+def test_webhook_delivery_runs_on_gateway_email_on_bulk_and_payment_processing_on_critical():
     router = app.amqp.router
 
-    assert router.route({}, 'mockgateway.deliver_webhook')['queue'].name == 'bulk'
+    assert router.route({}, 'mockgateway.deliver_webhook')['queue'].name == 'gateway'
     assert router.route({}, 'payments.process_succeeded')['queue'].name == 'critical'
     assert router.route({}, 'notify.send_ticket_email')['queue'].name == 'bulk'
+
+
+def test_payments_are_reconciled_on_critical_at_least_every_minute():
+    entry = settings.CELERY_BEAT_SCHEDULE['reconcile-payments']
+
+    assert entry['task'] == 'payments.reconcile'
+    assert entry['options']['queue'] == 'critical'
+    assert 30 <= entry['schedule'] <= 60
 
 
 def test_a_fresh_web_process_can_publish_every_outbox_topic():

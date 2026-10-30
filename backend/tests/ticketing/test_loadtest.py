@@ -49,6 +49,11 @@ def _charge_again(payment: Payment) -> Payment:
     )
 
 
+def _charge_without_webhook(hold: Hold) -> None:
+    payment = payments.submit_charge(payments.prepare_checkout(user=hold.user, hold_uuid=hold.uuid))
+    MockCharge.objects.filter(idempotency_key=str(payment.uuid)).update(status=MockCharge.Status.SUCCEEDED)
+
+
 def _outbox_row(*, age: timedelta) -> OutboxMessage:
     message = OutboxMessage.objects.create(topic='notify.send_ticket_email')
     OutboxMessage.objects.filter(pk=message.pk).update(created_on=timezone.now() - age)
@@ -114,6 +119,7 @@ def test_verify_passes_on_a_consistent_event(sold_event):
         (lambda event: Order.objects.create(hold=Hold.objects.get(quantity=1), amount_satang=1, status='paid_unfulfilled'), 'no_paid_unfulfilled'),
         (lambda event: _outbox_row(age=timedelta(minutes=1)), 'outbox_drained'),
         (lambda event: DeadLetter.objects.create(task_name='tickets.issue', error='boom'), 'no_dead_letters'),
+        (lambda event: _charge_without_webhook(Hold.objects.get(quantity=1)), 'charges_recorded'),
     ],
 )
 def test_verify_reports_each_broken_invariant(sold_event, corrupt, failed):
@@ -177,8 +183,8 @@ def test_sample_reads_connections_and_counts_every_priority_list_of_a_queue():
     make_user()
     OutboxMessage.objects.create(topic='notify.send_ticket_email')
 
-    row = sample_saturation(FakeRedis({'critical': 3, 'critical\x06\x169': 2, 'bulk': 1}))
+    row = sample_saturation(FakeRedis({'critical': 3, 'critical\x06\x169': 2, 'gateway': 4, 'bulk': 1}))
 
     assert tuple(row) == SAMPLE_FIELDS
-    assert (row['queue_critical'], row['queue_bulk'], row['outbox_unpublished']) == (5, 1, 1)
+    assert (row['queue_critical'], row['queue_gateway'], row['queue_bulk'], row['outbox_unpublished']) == (5, 4, 1, 1)
     assert 1 <= row['db_connections'] <= row['db_max_connections']

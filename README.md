@@ -40,8 +40,8 @@ uv run python manage.py runserver
 | --- | --- |
 | `uv run pytest` | Run the test suite against the local PostgreSQL and Redis |
 | `uv run ruff check . && uv run ruff format --check .` | Lint and format check |
-| `uv run celery -A ticketrush worker -Q critical,bulk -l info` | Run a Celery worker (add `--pool=solo` on Windows) |
-| `uv run celery -A ticketrush beat -l info` | Run the scheduler for the outbox relay, hold sweeper, and token cleanup |
+| `uv run celery -A ticketrush worker -Q critical,gateway,bulk -l info` | Run a Celery worker (add `--pool=solo` on Windows) |
+| `uv run celery -A ticketrush beat -l info` | Run the scheduler for the outbox relay, hold sweeper, payment reconcile, and token cleanup |
 | `uv run python manage.py seed_mockdata [--buyers N]` | Create the demo catalog (14 small and medium events in every sale status) and optional load-test buyers `mock-buyer-00001`...; safe to rerun |
 | `uv run python manage.py purge_mockdata [--dry-run]` | Delete the demo catalog with everything bought on it and the mock users, for a clean load-test run |
 

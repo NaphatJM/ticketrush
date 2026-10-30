@@ -1,18 +1,26 @@
 import json
 from collections.abc import Mapping
 from datetime import datetime
+from datetime import timedelta
 
 from django.conf import settings
+from django.utils import timezone
 
 from mockgateway import services as mock_gateway
 from mockgateway import signing
 from mockgateway.exceptions import GatewayError
+from mockgateway.models import MockCharge
 
 from .base import Charge
+from .base import ChargeStatus
 from .base import GatewayUnavailableError
 from .base import InvalidWebhookError
 from .base import WebhookNotice
 from .base import register_gateway
+
+
+# A pay request that passed the expiry check just before `expires_at` may still be committing.
+SETTLE_GRACE = timedelta(seconds=30)
 
 
 @register_gateway('mock')
@@ -23,6 +31,20 @@ class MockGateway:
         except GatewayError as exc:
             raise GatewayUnavailableError(str(exc)) from exc
         return Charge(charge_id=charge.charge_id, payment_url=mock_gateway.payment_url(charge))
+
+    def retrieve_charge(self, *, idempotency_key: str, timeout: float) -> ChargeStatus:
+        try:
+            charge = mock_gateway.find_charge(idempotency_key=idempotency_key, timeout=timeout)
+        except GatewayError as exc:
+            raise GatewayUnavailableError(str(exc)) from exc
+        if charge is None:
+            return ChargeStatus.NOT_FOUND
+        if charge.status == MockCharge.Status.SUCCEEDED:
+            return ChargeStatus.SUCCEEDED
+        # The mock refuses to pay a charge past its expiry, so once the grace has passed it can no longer succeed.
+        if charge.status == MockCharge.Status.PENDING and charge.expires_at > timezone.now() - SETTLE_GRACE:
+            return ChargeStatus.PENDING
+        return ChargeStatus.FAILED
 
     def parse_webhook(self, *, body: bytes, headers: Mapping[str, str]) -> WebhookNotice:
         try:

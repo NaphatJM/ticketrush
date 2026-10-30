@@ -1,6 +1,7 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
+from enum import StrEnum
 from typing import Any
 from typing import Protocol
 
@@ -9,6 +10,14 @@ from django.core.exceptions import ImproperlyConfigured
 
 CHARGE_SUCCEEDED = 'charge.succeeded'
 CHARGE_FAILED = 'charge.failed'
+
+
+class ChargeStatus(StrEnum):
+    SUCCEEDED = 'succeeded'
+    #: Declined, cancelled, or expired; the charge can no longer succeed.
+    FAILED = 'failed'
+    PENDING = 'pending'
+    NOT_FOUND = 'not_found'
 
 
 class GatewayUnavailableError(Exception):
@@ -39,6 +48,8 @@ class GatewayAdapter(Protocol):
     provider: str
 
     def create_charge(self, *, idempotency_key: str, amount_satang: int, expires_at: datetime, timeout: float) -> Charge: ...
+
+    def retrieve_charge(self, *, idempotency_key: str, timeout: float) -> ChargeStatus: ...
 
     def parse_webhook(self, *, body: bytes, headers: Mapping[str, str]) -> WebhookNotice: ...
 

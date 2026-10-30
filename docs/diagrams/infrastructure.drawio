@@ -89,7 +89,7 @@
         <mxCell id="web" parent="app" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="&lt;b&gt;web&lt;/b&gt; (public domain)&lt;br&gt;Django + gunicorn&lt;br&gt;healthcheck /system/readiness/&lt;br&gt;pre-deploy: migrate" vertex="1">
           <mxGeometry height="110" width="225" x="15" y="40" as="geometry" />
         </mxCell>
-        <mxCell id="wc" parent="app" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;b&gt;worker-critical&lt;/b&gt;&lt;br&gt;celery -Q critical&lt;br&gt;acks_late" vertex="1">
+        <mxCell id="wc" parent="app" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;b&gt;worker-critical&lt;/b&gt;&lt;br&gt;celery -Q critical,gateway&lt;br&gt;acks_late" vertex="1">
           <mxGeometry height="110" width="165" x="255" y="40" as="geometry" />
         </mxCell>
         <mxCell id="beat" parent="app" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="&lt;b&gt;beat&lt;/b&gt;&lt;br&gt;replicas = 1" vertex="1">

@@ -7,24 +7,34 @@ import { checkout } from "@/app/actions";
 import { ErrorNote } from "@/components/error-note";
 import type { ActionError } from "@/lib/action-result";
 
-const POLL_MS = 1500;
-const POLL_LIMIT = 80;
+const POLL_BUDGET_MS = 120_000;
+
+function pollDelayMs(attempt: number): number {
+  if (attempt < 4) return 1500;
+  if (attempt < 8) return 3000;
+  return 5000;
+}
 
 export function AutoRefresh({ active }: { active: boolean }) {
   const router = useRouter();
-  const polls = useRef(0);
 
   useEffect(() => {
     if (!active) return;
-    const timer = setInterval(() => {
-      polls.current += 1;
-      if (polls.current > POLL_LIMIT) {
-        clearInterval(timer);
-        return;
-      }
-      router.refresh();
-    }, POLL_MS);
-    return () => clearInterval(timer);
+    let polls = 0;
+    let waitedMs = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const schedule = () => {
+      if (waitedMs >= POLL_BUDGET_MS) return;
+      const delay = pollDelayMs(polls);
+      timer = setTimeout(() => {
+        polls += 1;
+        waitedMs += delay;
+        router.refresh();
+        schedule();
+      }, delay);
+    };
+    schedule();
+    return () => clearTimeout(timer);
   }, [active, router]);
 
   return null;

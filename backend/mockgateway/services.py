@@ -24,15 +24,7 @@ logger = logging.getLogger(__name__)
 
 def create_charge(*, idempotency_key: str, amount_satang: int, expires_at: datetime, timeout: float) -> MockCharge:
     """Return the charge for this key, creating it on first use, the way a provider honours an idempotency key."""
-    config = FaultConfig.load()
-    delay = config.latency_ms / 1000
-    if delay > timeout:
-        time.sleep(timeout)
-        raise GatewayTimeoutError(f'no response within {timeout} s')
-    time.sleep(delay)
-    if random.random() < config.error_rate:  # noqa: S311
-        raise GatewayError('injected charge error')
-
+    _inject_faults(timeout=timeout)
     try:
         with transaction.atomic():
             charge, _ = MockCharge.objects.get_or_create(
@@ -43,6 +35,23 @@ def create_charge(*, idempotency_key: str, amount_satang: int, expires_at: datet
     if charge.amount_satang != amount_satang:
         raise GatewayError('idempotency key reused with a different amount')
     return charge
+
+
+def find_charge(*, idempotency_key: str, timeout: float) -> MockCharge | None:
+    """Look up the charge for this key, with the same injected latency and errors as creating one."""
+    _inject_faults(timeout=timeout)
+    return MockCharge.objects.filter(idempotency_key=idempotency_key).first()
+
+
+def _inject_faults(*, timeout: float) -> None:
+    config = FaultConfig.load()
+    delay = config.latency_ms / 1000
+    if delay > timeout:
+        time.sleep(timeout)
+        raise GatewayTimeoutError(f'no response within {timeout} s')
+    time.sleep(delay)
+    if random.random() < config.error_rate:  # noqa: S311
+        raise GatewayError('injected gateway error')
 
 
 def payment_url(charge: MockCharge) -> str:
