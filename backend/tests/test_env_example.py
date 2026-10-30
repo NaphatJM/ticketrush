@@ -9,7 +9,7 @@ ENV_EXAMPLE = BACKEND / '.env.example'
 SETTINGS_DIR = BACKEND / 'ticketrush' / 'settings'
 
 #: Read by tools other than Django, so they carry no prefix.
-TOOL_OWNED_KEYS = frozenset({'PORT', 'GUNICORN_WORKERS', 'GUNICORN_THREADS', 'GUNICORN_TIMEOUT', 'OTEL_SERVICE_NAME'})
+TOOL_OWNED_KEYS = frozenset({'PORT', 'GUNICORN_WORKERS', 'GUNICORN_THREADS', 'GUNICORN_TIMEOUT', 'GUNICORN_MAX_REQUESTS', 'OTEL_SERVICE_NAME'})
 
 
 def _example_lines() -> list[str]:

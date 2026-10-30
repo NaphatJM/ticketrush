@@ -35,7 +35,7 @@ pnpm-debug.log*
 docs/internal/
 
 # ==== Load test ====
-loadtest/results/raw/
+loadtest/results/
 
 # ==== Diagrams ====
 *.drawio.bkp

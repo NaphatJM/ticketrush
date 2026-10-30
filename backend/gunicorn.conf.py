@@ -8,7 +8,8 @@ worker_class = 'gthread'
 timeout = int(os.getenv('GUNICORN_TIMEOUT', '30'))
 graceful_timeout = 20
 keepalive = 5
-max_requests = 1000
-max_requests_jitter = 50
+# Recycling forks a worker that re-imports Django; a low limit restarts workers every few seconds under load.
+max_requests = int(os.getenv('GUNICORN_MAX_REQUESTS', '20000'))
+max_requests_jitter = max_requests // 10
 accesslog = '-'
 errorlog = '-'
