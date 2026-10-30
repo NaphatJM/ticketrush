@@ -12,3 +12,5 @@ class ActivityVerb(TextChoices):
     ORDER_PAYMENT_FAILED = 'order.payment_failed', _('Order payment failed')
     ORDER_PAID_UNFULFILLED = 'order.paid_unfulfilled', _('Order paid but unfulfilled')
     DEAD_LETTER_REPLAYED = 'dead_letter.replayed', _('Dead letter replayed')
+    MOCKDATA_SEEDED = 'mockdata.seeded', _('Mock data seeded')
+    MOCKDATA_PURGED = 'mockdata.purged', _('Mock data purged')
