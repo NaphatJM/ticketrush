@@ -72,6 +72,7 @@ All notable changes to TicketRush are documented here. The format follows
   - Every API call has a 10-second timeout, and error messages show the API's `Correlation-ID`.
 - Add the frontend CI job: lint, typecheck, production build, and a dependency audit.
 - Add `DJANGO_BFF_SHARED_SECRET`. A request that carries it in `BFF-Secret` is counted under the IP in `BFF-Client-IP` by the IP throttles and the audit log, so buyers behind the frontend no longer share one bucket. Production refuses a secret shorter than 32 bytes.
+- Add the `seed_mockdata` and `purge_mockdata` management commands: an idempotent demo catalog of 8 small and 6 medium events across every sale status plus drafts, optional load-test buyers, and a purge that removes mock events with their purchases and audit-logs both actions.
 
 ### Changed
 - Rename the health endpoints to `/system/healthcheck/`, `/system/readiness/`, and `/system/dependencies/` in the design documents and diagrams.
