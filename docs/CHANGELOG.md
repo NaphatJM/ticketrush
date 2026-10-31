@@ -102,3 +102,6 @@ All notable changes to TicketRush are documented here. The format follows
 - Storefront errors show short, plain messages mapped from the API error code, with a generic message for unknown codes. Error codes, correlation IDs, and raw API messages are no longer shown; the correlation ID goes to the browser console instead. Sign-up field errors appear under their fields, and the form keeps what the user typed after an error.
 - The stock bar on each event card fills with the tickets left rather than the tickets sold, so it is full when a sale opens and empty when it sells out, and screen readers announce it as a meter.
 - `scripts/smoke_test.py` registers each run with a labeled Resend test address (`delivered+<username>@resend.dev`), since emails are now unique per account.
+
+### Fixed
+- Celery beat keeps its schedule file in the system temp directory, so it starts without a `--schedule` flag. The image runs as a user that cannot write to `/app`, and beat started without the flag exited on boot, so no periodic task ran: overdue holds stayed active and dropped webhooks were never reconciled.
