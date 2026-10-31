@@ -305,7 +305,19 @@ LOGGING = {
         'rest_framework_tracking': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
         'utils': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
         'ticketrush': {'handlers': ['console'], 'level': LOG_LEVEL, 'propagate': False},
+        # Export failures must stay visible, and must not be exported themselves.
+        'opentelemetry': {'handlers': ['console'], 'level': 'WARNING', 'propagate': False},
     },
     # Loggers outside the list above would otherwise fall back to logging.lastResort: no cid, no JSON.
     'root': {'handlers': ['console'], 'level': 'WARNING'},
 }
+
+if os.environ.get('OTEL_EXPORTER_OTLP_ENDPOINT'):
+    # Bound to the global logger provider through a proxy, so it exports whether telemetry.configure runs before or after dictConfig.
+    LOGGING['handlers']['otlp'] = {
+        'class': 'opentelemetry.instrumentation.logging.handler.LoggingHandler',
+        'filters': ['correlation_id', 'celery_tracing'],
+    }
+    for _name, _logger in [*LOGGING['loggers'].items(), ('root', LOGGING['root'])]:
+        if _name != 'opentelemetry':
+            _logger['handlers'].append('otlp')

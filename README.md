@@ -82,3 +82,16 @@ python scripts/smoke_test.py [--api URL] [--event UUID]
 ```
 
 Buys one ticket end to end against a live API (production by default): register, hold with a key replay, checkout, mock payment, and the ticket. It needs only the Python standard library and exits 1 on the first failed step. Each run leaves a user and a paid one-ticket order, so pass `--event` with a mock event to keep real events' stock.
+
+### Deploy
+
+Pushes to `main` deploy through `.github/workflows/deploy.yml` once CI passes: `web` first (its pre-deploy command runs the migrations), then `worker-critical`, `worker-bulk`, and `beat`, each waited on until Railway reports it live, then a readiness wait and the smoke test. Railway autodeploy stays disabled on every service so a push deploys once.
+
+| GitHub setting | Purpose |
+| --- | --- |
+| `RAILWAY_TOKEN` (secret) | Railway project token for the production environment |
+| `GRAFANA_ANNOTATION_TOKEN` (secret, optional) | Grafana service account token; without it the annotation step is skipped |
+| `GRAFANA_URL` (variable, optional) | Grafana stack URL, such as `https://<stack>.grafana.net` |
+| `SMOKE_EVENT_UUID` (variable, optional) | Event the post-deploy smoke test buys from; point it at a mock event to keep real events' stock |
+
+Roll back by redeploying the previous deployment in Railway.

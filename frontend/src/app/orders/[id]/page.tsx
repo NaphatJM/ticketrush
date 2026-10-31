@@ -8,14 +8,15 @@ import { redirectIfSignedOut, requireSession } from "@/lib/auth";
 import { formatBaht, formatDateTime, ORDER_STATUS_LABEL } from "@/lib/format";
 import type { Order } from "@/lib/types";
 
-import { AutoRefresh, RetryPayment } from "./order-controls";
+import { AutoRefresh, PaymentToasts, RetryPayment, type PaymentState } from "./order-controls";
 
 export const metadata: Metadata = { title: "Your order" };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default async function OrderPage({ params }: PageProps<"/orders/[id]">) {
+export default async function OrderPage({ params, searchParams }: PageProps<"/orders/[id]">) {
   const { id } = await params;
+  const fromPay = (await searchParams).from === "pay";
   if (!UUID.test(id)) notFound();
   await requireSession(`/orders/${id}`);
 
@@ -31,10 +32,20 @@ export default async function OrderPage({ params }: PageProps<"/orders/[id]">) {
   const waitingForWebhook = order.status === "pending_payment" && payment?.status === "pending";
   const chargeId = payment?.payment_url ? new URL(payment.payment_url).pathname.split("/").filter(Boolean).pop() : null;
   const issuing = order.status === "paid" && order.tickets.length < order.quantity;
+  const paymentState: PaymentState = waitingForWebhook
+    ? "waiting"
+    : issuing
+      ? "issuing"
+      : order.status === "paid"
+        ? "paid"
+        : order.status === "failed"
+          ? "failed"
+          : "other";
 
   return (
     <div className="mx-auto max-w-3xl">
       <AutoRefresh active={waitingForWebhook || issuing} />
+      <PaymentToasts orderUuid={order.uuid} state={paymentState} fromPay={fromPay} />
       <p className="text-sm text-muted">Order {order.uuid}</p>
       <h1 className="mt-1 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">{order.event.title}</h1>
       <p className="mt-1 text-muted">

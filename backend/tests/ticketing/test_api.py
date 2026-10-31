@@ -239,6 +239,48 @@ def test_events_can_be_filtered_by_category():
     assert [item['uuid'] for item in listed] == [str(concert.uuid)]
 
 
+def test_events_can_be_searched_by_title_or_venue_ignoring_case():
+    by_title = make_event(title='Jazz Night at the Corner Room', venue_name='Blue Hall')
+    by_venue = make_event(title='Open Mic', venue_name='The Jazz Cellar')
+    make_event(title='City Run', venue_name='Lumpini Park')
+
+    listed = APIClient().get('/api/events/', {'q': '  jAzZ '}).json()['data']
+
+    assert {item['uuid'] for item in listed} == {str(by_title.uuid), str(by_venue.uuid)}
+
+
+def test_search_treats_like_wildcards_as_text():
+    percent = make_event(title='100% Fun')
+    make_event(title='1000 Fans')
+
+    listed = APIClient().get('/api/events/', {'q': '100%'}).json()['data']
+
+    assert [item['uuid'] for item in listed] == [str(percent.uuid)]
+
+
+def test_search_combines_with_the_other_filters():
+    concert = make_event(title='Jazz Night', category=Event.Category.CONCERT)
+    make_event(title='Jazz Workshop', category=Event.Category.WORKSHOP)
+
+    listed = APIClient().get('/api/events/', {'q': 'jazz', 'category': 'concert'}).json()['data']
+
+    assert [item['uuid'] for item in listed] == [str(concert.uuid)]
+
+
+def test_an_overlong_search_is_rejected():
+    response = APIClient().get('/api/events/', {'q': 'x' * 101})
+
+    assert response.status_code == 400
+    assert response.json()['status']['message'].startswith('[q]')
+
+
+def test_a_search_with_a_null_character_is_rejected():
+    response = APIClient().get('/api/events/', {'q': 'a\x00b'})
+
+    assert response.status_code == 400
+    assert response.json()['status']['message'].startswith('[q]')
+
+
 def test_the_list_omits_long_text_that_the_detail_returns():
     event = make_event(
         summary='Short', description='Long text', important_info='Bring ID', venue_address='1 Road', venue_map_url='https://maps.example/x'

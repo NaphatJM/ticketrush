@@ -76,9 +76,18 @@ All notable changes to TicketRush are documented here. The format follows
 - Add Locust load tests in `loadtest/`: a 1,000-buyer flash sale, weighted user journeys, and reliability runs under mock gateway faults. Locust sends BFF headers so per-IP throttles see one client per buyer.
 - Add `loadtest/run_all.sh`, which runs every load test scenario against production in one go: it seeds each run, sets and resets the gateway faults, samples saturation, and verifies the invariants.
 - Add the `seed_loadtest`, `loadtest_verify`, and `loadtest_sample` management commands: a purge-able event per run, a read-only stock and ticket invariant check that exits 1 on failure, and CSV readings of database connections and queue backlogs.
+- Add OpenTelemetry export over OTLP/HTTP, enabled by `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS`:
+  - Traces for Django, PostgreSQL, Redis, Celery, and outgoing HTTP. Request spans carry the `cid`, and the context travels into Celery tasks and the mock gateway's webhook.
+  - Logs exported over OTLP with the `cid`. JSON log lines gain `trace_id` and `span_id`.
+  - Metrics: hold requests by result, gateway charges by outcome with latency, webhooks by result, and task outcomes including dead letters. Beat also reports queue lengths, outbox backlog and age, pending dead letters, unprocessed webhooks, stock per event on sale by event UUID, and seconds since it last sent a task.
+  - Each gunicorn worker, Celery pool process, and beat starts its exporters after fork. Health and readiness probes are not traced, and export failures are logged to stdout.
 - Add `scripts/smoke_test.py`, which buys one ticket end to end against a live API and exits 1 on the first failed step.
 - Add the payment reconcile job: `payments.reconcile` runs every 30 seconds on `critical`, asks the gateway for the status of open payments untouched for 60 seconds, and records each settled charge as a webhook event, so a lost webhook still pays the order and issues its tickets. Lookups have a timeout, go through the gateway circuit breaker, and change nothing when they fail. Deploy: apply migration `payments/0002` before the new workers start, since they read `payments.reconciled_at`.
 - `loadtest_verify` fails its new `charges_recorded` check when the gateway settled a charge that no payment recorded.
+- Add toast notifications to the storefront with Sonner, following the light or dark system theme: success after a hold, a payment that issued tickets, a sign-up, and a sign-out; errors for sold out, the per-user limit, a closed sale, a wrong sign-in, a declined payment, and unavailable payments; warnings when a hold has under a minute left, when too little time is left to pay, and when sales or sign-in are paused; and a notice while the payment provider confirms.
+- Add sale status (`?status=`), category (`?category=`), and search (`?q=`) filters to the storefront event list, kept in the URL, with an empty state when nothing matches.
+- Add `?q=` to `GET /api/events/`: a case-insensitive match on the title or the venue name, at most 100 characters and no null characters (`400` otherwise).
+- Add the deploy workflow (`.github/workflows/deploy.yml`): after CI passes on a push to `main`, it deploys `web` and then the workers and beat to Railway with `railway up`, waiting for each deployment to reach `SUCCESS`, then waits for `/system/readiness/`, runs the smoke test (against `SMOKE_EVENT_UUID` when set), and posts a Grafana annotation for success or failure when `GRAFANA_ANNOTATION_TOKEN` is set. Railway autodeploy must be disabled on every service, or each push deploys twice.
 
 ### Changed
 - Rename the health endpoints to `/system/healthcheck/`, `/system/readiness/`, and `/system/dependencies/` in the design documents and diagrams.
@@ -94,3 +103,10 @@ All notable changes to TicketRush are documented here. The format follows
 - The PostgreSQL connection budget in `docs/fail-safe.md` counts every gunicorn thread and every Celery child, since each keeps its own connection.
 - The order page polls for payment every 1.5 s four times, then every 3 s four times, then every 5 s, for at least the same 2 minutes, and the journey load test polls on the same schedule. Order polls were 60% of journey requests.
 - The OpenAPI docs now describe each endpoint with its own summary, description, and tag, declare the `{status, data}` envelope and the paginated list shape that the API actually returns, and list the error responses and the `Idempotent-Replayed` header.
+- Registration rejects an email that already has an account, ignoring case, with `409 EMAIL_TAKEN`; a unique index on `lower(email)` for non-empty emails settles simultaneous sign-ups. The sign-up form shows the error under the email field with a link to sign in. Deploy: remove or change duplicate production emails before migration `accounts/0003` runs, or it fails.
+- Storefront errors show short, plain messages mapped from the API error code, with a generic message for unknown codes. Error codes, correlation IDs, and raw API messages are no longer shown; the correlation ID goes to the browser console instead. Sign-up field errors appear under their fields, and the form keeps what the user typed after an error.
+- The stock bar on each event card fills with the tickets left rather than the tickets sold, so it is full when a sale opens and empty when it sells out, and screen readers announce it as a meter.
+- `scripts/smoke_test.py` registers each run with a labeled Resend test address (`delivered+<username>@resend.dev`), since emails are now unique per account.
+
+### Fixed
+- Celery beat keeps its schedule file in the system temp directory, so it starts without a `--schedule` flag. The image runs as a user that cannot write to `/app`, and beat started without the flag exited on boot, so no periodic task ran: overdue holds stayed active and dropped webhooks were never reconciled.

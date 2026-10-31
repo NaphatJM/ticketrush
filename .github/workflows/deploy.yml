@@ -1,0 +1,116 @@
+name: Deploy
+
+# Railway autodeploy must stay disabled on every service; this workflow is the only deploy path.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  API_URL: https://api.ticketrush.naphat.online
+  RAILWAY_CLI_VERSION: 5.71.0
+  SHA: ${{ github.event.workflow_run.head_sha }}
+
+jobs:
+  web:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ env.SHA }}
+          persist-credentials: false
+      - run: npm install --global @railway/cli@${{ env.RAILWAY_CLI_VERSION }}
+      # Web deploys first: its pre-deploy command runs the migrations that the workers and beat expect.
+      - name: Deploy web
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: bash .github/scripts/railway-deploy.sh web "$SHA"
+
+  workers:
+    needs: web
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [worker-critical, worker-bulk, beat]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ env.SHA }}
+          persist-credentials: false
+      - run: npm install --global @railway/cli@${{ env.RAILWAY_CLI_VERSION }}
+      - name: Deploy ${{ matrix.service }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: bash .github/scripts/railway-deploy.sh "${{ matrix.service }}" "$SHA"
+
+  verify:
+    needs: [web, workers]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ env.SHA }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.13'
+      - name: Wait for readiness
+        run: |
+          for attempt in $(seq 1 60); do
+            status=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 "$API_URL/system/readiness/" || true)
+            if [ "$status" = "200" ]; then
+              echo "Ready after $attempt attempt(s)"
+              exit 0
+            fi
+            echo "Attempt $attempt: HTTP $status"
+            sleep 5
+          done
+          echo "::error::$API_URL/system/readiness/ did not return 200 within 5 minutes"
+          exit 1
+      # Buys one ticket on production: a smoke user and a paid one-ticket order on every deploy.
+      # Set the SMOKE_EVENT_UUID variable to a mock event to keep real events' stock.
+      - name: Smoke test
+        env:
+          SMOKE_EVENT_UUID: ${{ vars.SMOKE_EVENT_UUID }}
+        run: python scripts/smoke_test.py --api "$API_URL" ${SMOKE_EVENT_UUID:+--event "$SMOKE_EVENT_UUID"}
+
+  annotate:
+    needs: [web, workers, verify]
+    if: always() && needs.web.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    steps:
+      - name: Grafana annotation
+        env:
+          GRAFANA_URL: ${{ vars.GRAFANA_URL }}
+          GRAFANA_ANNOTATION_TOKEN: ${{ secrets.GRAFANA_ANNOTATION_TOKEN }}
+          OUTCOME: ${{ needs.web.result == 'success' && needs.workers.result == 'success' && needs.verify.result == 'success' && 'success' || 'failure' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$GRAFANA_ANNOTATION_TOKEN" ] || [ -z "$GRAFANA_URL" ]; then
+            echo "GRAFANA_ANNOTATION_TOKEN or GRAFANA_URL is not set; skipping the annotation"
+            exit 0
+          fi
+          body=$(jq --null-input --arg text "Deploy ${SHA:0:7} ($OUTCOME): $RUN_URL" --arg outcome "$OUTCOME" \
+            '{text: $text, tags: ["deploy", "ticketrush", $outcome]}')
+          curl --fail-with-body --silent --show-error --max-time 10 \
+            --header "Authorization: Bearer $GRAFANA_ANNOTATION_TOKEN" \
+            --header 'Content-Type: application/json' \
+            --data "$body" "${GRAFANA_URL%/}/api/annotations"
