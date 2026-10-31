@@ -4,7 +4,7 @@ TicketRush sells a small number of tickets to many buyers who arrive at the same
 
 The domain is kept deliberately small. This document covers the backend underneath it: concurrency control, background jobs, failure handling, observability, and the delivery pipeline.
 
-> **Status:** the backend is live on Railway; the frontend, observability, load test, and deploy pipeline are not built yet. The sections below describe the target system, and the [roadmap](#roadmap) shows what is built.
+> **Status:** the backend is live on Railway and the frontend on Vercel; the deploy pipeline is written but has not run yet, and observability and the load test are not finished. The sections below describe the target system, and the [roadmap](#roadmap) shows what is built.
 
 ## How it works
 

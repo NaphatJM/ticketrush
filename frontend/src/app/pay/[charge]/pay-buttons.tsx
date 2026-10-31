@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { payCharge } from "@/app/actions";
 import { ErrorNote } from "@/components/error-note";
 import type { ActionError } from "@/lib/action-result";
+import { routeActionError } from "@/lib/notify";
 
 export function PayButtons({ chargeId, orderUuid, payable }: { chargeId: string; orderUuid: string; payable: boolean }) {
   const [error, setError] = useState<ActionError | null>(null);
@@ -15,7 +16,7 @@ export function PayButtons({ chargeId, orderUuid, payable }: { chargeId: string;
     setError(null);
     startTransition(async () => {
       const result = await payCharge(chargeId, orderUuid, outcome);
-      if (result && !result.ok) setError(result.error);
+      if (result && !result.ok) setError(routeActionError(result.error));
     });
   }
 
