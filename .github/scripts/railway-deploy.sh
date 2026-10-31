@@ -7,7 +7,8 @@ service="$1"
 sha="$2"
 timeout_seconds=600
 
-railway up . --service "$service" --ci --message "$sha"
+# No path argument: the CLI strips its absolute working directory from each archived path, so a relative path fails with "prefix not found".
+railway up --service "$service" --ci --message "$sha"
 
 # `railway up --ci` can return when the build finishes, before the new deployment serves traffic.
 deadline=$((SECONDS + timeout_seconds))
