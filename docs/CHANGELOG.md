@@ -90,6 +90,7 @@ All notable changes to TicketRush are documented here. The format follows
 - Add the deploy workflow (`.github/workflows/deploy.yml`): after CI passes on a push to `main`, it deploys `web` and then the workers and beat to Railway with `railway up`, waiting for each deployment to reach `SUCCESS`, then waits for `/system/readiness/`, runs the smoke test (against `SMOKE_EVENT_UUID` when set), and posts a Grafana annotation for success or failure when `GRAFANA_ANNOTATION_TOKEN` is set. Railway autodeploy must be disabled on every service, or each push deploys twice.
 
 ### Changed
+- The README shows storefront screenshots, the architecture and infrastructure diagrams, the purchase flow and design goals, and the production load test results (P1 flash sale, journey, optimization, and fault injection) as images in `docs/screenshots/` and `docs/slides/`.
 - Rename the health endpoints to `/system/healthcheck/`, `/system/readiness/`, and `/system/dependencies/` in the design documents and diagrams.
 - Ticket emails are sent from `noreply@mail.naphat.online`, a Resend-verified domain, so any buyer receives them.
 - The production API is served at `https://api.ticketrush.naphat.online`.
