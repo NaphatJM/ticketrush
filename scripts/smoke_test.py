@@ -17,7 +17,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--api', default='https://api.ticketrush.naphat.online', help='API base URL')
     parser.add_argument('--event', help='event UUID; default: the on-sale event with the most seats left')
-    parser.add_argument('--email', default='delivered@resend.dev', help="buyer email; the default is Resend's test inbox")
+    parser.add_argument('--email', help="buyer email; default: Resend's test inbox with a per-run label, since emails are unique per account")
     parser.add_argument('--paid-timeout', type=float, default=60, help='seconds to wait for the order to turn paid')
     args = parser.parse_args()
     smoke = Smoke(args.api.rstrip('/'))
@@ -41,7 +41,7 @@ class Smoke:
         self.steps = 0
         self.passed = 0
 
-    def run(self, *, event_uuid: str | None, email: str, paid_timeout: float) -> None:
+    def run(self, *, event_uuid: str | None, email: str | None, paid_timeout: float) -> None:
         status, payload, _, elapsed = self.call('GET', '/system/readiness/')
         self.check('readiness', status == 200, f'{status} in {elapsed:.2f}s {payload.get("error", "")}')
 
@@ -49,6 +49,7 @@ class Smoke:
         print(f'      event: {event["title"]} ({event["uuid"]}), {event["available"]} left')
 
         username = f'smoke{int(time.time())}'
+        email = email or f'delivered+{username}@resend.dev'
         status, payload, _, elapsed = self.call(
             'POST', '/api/auth/register/', body={'username': username, 'email': email, 'password': secrets.token_urlsafe(16)}
         )

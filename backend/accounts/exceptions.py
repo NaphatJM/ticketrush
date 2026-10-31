@@ -8,6 +8,12 @@ class UsernameTaken(APIException):
     default_code = 'username_taken'
 
 
+class EmailTaken(APIException):
+    status_code = status.HTTP_409_CONFLICT
+    default_detail = 'This email already has an account.'
+    default_code = 'email_taken'
+
+
 class SignInPaused(APIException):
     status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     default_detail = 'Signing in is paused. Try again shortly.'

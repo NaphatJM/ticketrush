@@ -118,3 +118,19 @@ body {
     transition: none;
   }
 }
+
+[data-sonner-toast][data-type="success"] [data-icon] {
+  color: var(--ok);
+}
+
+[data-sonner-toast][data-type="error"] [data-icon] {
+  color: var(--bad);
+}
+
+[data-sonner-toast][data-type="warning"] [data-icon] {
+  color: var(--warn);
+}
+
+[data-sonner-toast][data-type="info"] [data-icon] {
+  color: var(--accent);
+}

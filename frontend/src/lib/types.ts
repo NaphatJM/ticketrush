@@ -1,5 +1,9 @@
 export type SaleStatus = "upcoming" | "on_sale" | "sold_out" | "closed";
 
+export const EVENT_CATEGORIES = ["concert", "festival", "theatre", "comedy", "sports", "conference", "workshop", "other"] as const;
+
+export type EventCategory = (typeof EVENT_CATEGORIES)[number];
+
 export type User = {
   uuid: string;
   username: string;

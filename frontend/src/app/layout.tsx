@@ -1,14 +1,27 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import Link from "next/link";
+import { Toaster } from "sonner";
 
 import { logout } from "./actions";
 import "./globals.css";
+import { FlashToast } from "@/components/flash-toast";
 import { currentSession } from "@/lib/api";
+import { FLASH_COOKIE } from "@/lib/flash";
 
 const display = Bricolage_Grotesque({ variable: "--font-display", subsets: ["latin"], weight: ["600", "800"] });
 const body = Instrument_Sans({ variable: "--font-body", subsets: ["latin"] });
 const mono = JetBrains_Mono({ variable: "--font-mono", subsets: ["latin"], weight: ["500", "700"] });
+
+// Inline, because Sonner sets these variables on selectors that outrank a class.
+const TOAST_STYLE = {
+  "--normal-bg": "var(--card)",
+  "--normal-text": "var(--ink)",
+  "--normal-border": "var(--line)",
+  "--border-radius": "14px",
+  fontFamily: "var(--font-body)",
+} as React.CSSProperties;
 
 export const metadata: Metadata = {
   title: { default: "TicketRush", template: "%s · TicketRush" },
@@ -16,7 +29,8 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const session = await currentSession();
+  const [session, cookieStore] = await Promise.all([currentSession(), cookies()]);
+  const flash = cookieStore.get(FLASH_COOKIE)?.value ?? null;
 
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable} h-full antialiased`}>
@@ -59,6 +73,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             </a>
           </div>
         </footer>
+        <Toaster theme="system" style={TOAST_STYLE} />
+        <FlashToast flash={flash} />
       </body>
     </html>
   );

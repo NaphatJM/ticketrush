@@ -37,6 +37,7 @@ class RegisterView(AnonymousAuthView):
         summary='Register a buyer account',
         description='Creates a buyer and returns the user with a token pair, so the client is signed in at once. '
         'Usernames are unique; a taken name returns `409 USERNAME_TAKEN`. '
+        'Emails are unique ignoring case; an email that already has an account returns `409 EMAIL_TAKEN`. '
         'Throttled per client IP; `503 SIGN_IN_PAUSED` means the throttle store is down and sign-up is paused.',
         request=RegisterSerializer,
         responses={
