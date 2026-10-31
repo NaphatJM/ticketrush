@@ -75,6 +75,118 @@ The draw.io sources, the [purchase sequence](docs/diagrams/purchase-sequence.dra
 
 ![CI, then web, workers, verify, and annotate](docs/slides/10-ci-cd.webp)
 
+## Logging and monitoring
+
+The backend keeps five kinds of records. Three are telemetry, streamed out of every process. Two are tables in PostgreSQL, browsable in the Django admin.
+
+| # | Record | What it answers | Where it lives |
+| --- | --- | --- | --- |
+| 1 | Application logs | What happened in this process, and in which function? | stdout (Railway logs), and Grafana Loki when OTLP is enabled |
+| 2 | Traces | Where did this request spend its time? | Grafana Tempo |
+| 3 | Metrics | Is the system healthy right now? | Grafana Cloud Prometheus |
+| 4 | API request log | What did this client send, and what did it get back? | `APIRequestLog` table |
+| 5 | Activity log | Who changed what, when, and from where? | `ActivityLog` table |
+
+### One ID across all of them
+
+Every HTTP request gets a correlation ID (`cid`), returned in the `Correlation-ID` response header. The same `cid` is stamped on every log line, on the request's trace span, on its API request log and activity log rows, and on every Celery task the request causes. A buyer who reports an error can quote the `cid`, and that one value finds everything the request did, including the background work after the response. The frontend keeps the `cid` from each API error and logs it with the error code.
+
+```mermaid
+flowchart LR
+    req["HTTP request<br/>cid assigned"] --> api["Django API"]
+    api -->|"cid in task headers"| task["Celery task"]
+    api --> logs["JSON logs<br/>stdout"]
+    task --> logs
+    api --> otlp["OTLP export"]
+    task --> otlp
+    otlp --> grafana["Grafana Cloud<br/>Loki, Tempo, Prometheus"]
+    api --> reqlog[("APIRequestLog")]
+    api --> audit[("ActivityLog")]
+    task --> audit
+```
+
+### 1. Application logs
+
+Every process (web, both workers, and beat) writes one JSON object per line to stdout. Third-party loggers go through the same formatter, so no line ever lacks the `cid` or falls back to plain text.
+
+| Field | Content |
+| --- | --- |
+| `ts`, `level`, `msg` | UTC timestamp in milliseconds, level, message |
+| `service`, `env` | `OTEL_SERVICE_NAME` and `DJANGO_ENVIRONMENT` |
+| `cid` | Correlation ID of the request, or of the request that queued the task |
+| `logger`, `module`, `func`, `line` | Where the line was written |
+| `trace_id`, `span_id` | The active span, so a log line opens its trace in Tempo |
+| `celery_current_id`, `celery_parent_id` | Inside tasks: the ID of this task and of the task that queued it |
+| `exc` | The traceback, when an exception is logged |
+| any `extra=` key | Added at the top level, such as `http_status` or `duration_ms` |
+
+```json
+{"ts": "2026-10-31T02:00:01.123+00:00", "level": "WARNING", "service": "ticketrush-api", "env": "production",
+ "cid": "6f1c0e2a9b4d4c55a1e7f3b2d8c90a41", "logger": "ticketing.views", "module": "logging", "func": "finalize_response",
+ "line": 29, "msg": "response", "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736", "span_id": "00f067aa0ba902b7",
+ "http_method": "POST", "path": "/api/events/0192f.../holds/", "http_status": 409}
+```
+
+- Every API response is logged: 5xx at `ERROR`, 4xx at `WARNING`, and the rest at `DEBUG`.
+- Service functions marked `@traced` log entry and exit with `duration_ms` at `DEBUG`, at the cost of one level check when `DEBUG` is off.
+- `DJANGO_LOG_LEVEL` sets the level for the project's own loggers. Django logs from `WARNING` and Celery from `INFO`.
+- Telemetry export failures are written to stdout and never exported, so a Grafana outage stays visible without feeding itself.
+
+### 2. Traces
+
+OpenTelemetry instruments Django, PostgreSQL (psycopg), Redis, Celery, and outgoing HTTP (urllib, used for Resend and webhook delivery). Trace context travels from the API into Celery tasks and into the mock gateway's webhook, so a payment can be followed in Tempo from the pay request through the webhook to the task that issues the tickets. Request spans carry the `cid` as an attribute. Health and readiness probes are not traced, since they arrive every few seconds and would bury real requests.
+
+Exporters start after fork in every process (gunicorn `post_fork`, Celery `worker_process_init`, and `beat_init`) and flush when a Celery pool process exits. Export is asynchronous with bounded buffers: if Grafana Cloud is down, the app keeps serving and drops telemetry instead of blocking.
+
+### 3. Metrics
+
+| Metric | Labels | What it shows |
+| --- | --- | --- |
+| `http.server.request.duration` | method, status code, route template, error type | Latency and error rate per endpoint (buckets 25 ms to 5 s) |
+| `ticketrush.hold.requests` | result: `ok`, `replayed`, or the error code | Hold outcomes during a sale, such as sold out or throttled |
+| `ticketrush.gateway.charges` | provider, outcome: `ok`, `error`, `circuit_open` | Payment gateway health and circuit breaker trips |
+| `ticketrush.gateway.charge.duration` | provider, outcome | Gateway latency |
+| `ticketrush.webhooks.received` | provider, result: `accepted`, `duplicate`, `rejected` | Duplicate and forged webhooks |
+| `ticketrush.task.outcomes` | task, outcome (the task's result, or `dead_letter`) | Background job results |
+
+Beat runs as exactly one replica, so it also reports system-wide gauges once:
+
+| Gauge | What it shows |
+| --- | --- |
+| `ticketrush.beat.publish_age` | Seconds since beat last sent a task; the outbox relay is due every 2 s, so a growing value means the scheduler is down |
+| `ticketrush.celery.queue.length` | Tasks waiting in each queue: `critical`, `gateway`, `bulk` |
+| `ticketrush.outbox.unpublished`, `ticketrush.outbox.oldest_age` | Outbox backlog and the age of its oldest row |
+| `ticketrush.dead_letters.pending` | Dead letters not yet replayed |
+| `ticketrush.webhooks.unprocessed` | Webhooks stored but not yet applied |
+| `ticketrush.event.available` | Stock left per event on sale, by event UUID (at most 20 events) |
+
+Labels use route templates and bounded values only, never raw paths or user IDs, to stay inside the Grafana Cloud free tier's 10k active series.
+
+### 4. API request log
+
+`APIRequestLog` stores one row for every write, every 4xx or 5xx response, and every request slower than `DJANGO_DRF_TRACKING_SLOW_MS` (2.5 s by default). Fast successful reads are skipped, so browse traffic during a sale does not double the database write load.
+
+Each row holds the user, method, path, view, status code, response time, client IP, host, user agent, query parameters, request body, the response body for errors, the traceback for 5xx, and the `cid`. Passwords, tokens, secrets, keys, and signatures are replaced with `********` at any depth before the row is written. If the insert fails, the request still succeeds and the failure is logged.
+
+### 5. Activity log
+
+`ActivityLog` is the append-only business audit trail. Every state change writes its row inside the same transaction as the change, so an audit row exists exactly when the change committed: a rolled-back change leaves no row, and a failed audit write rolls the change back.
+
+Each row holds the verb, the actor, the target model and its UUID, the `cid`, the client IP, and a JSON detail that never contains passwords, tokens, or payment data. Recorded verbs:
+
+| Area | Verbs |
+| --- | --- |
+| Accounts | `user.registered` |
+| Holds | `hold.created`, `hold.released`, `hold.expired` |
+| Orders | `order.created`, `order.paid`, `order.payment_failed`, `order.paid_unfulfilled` |
+| Operations | `dead_letter.replayed`, `mockdata.seeded`, `mockdata.purged` |
+
+### Monitoring
+
+- **Probes.** `/system/healthcheck/` for liveness, `/system/readiness/` as Railway's deploy gate, and the token-gated `/system/dependencies/` for PostgreSQL and Redis status. See the endpoint table under [Local development](#local-development).
+- **Failure records in the admin.** Dead letters (with a replay action), outbox rows with their attempt count and last error, and webhook events with their processed time. Their counts are the beat gauges above.
+- **Deploys.** Each deploy ends with a smoke test that buys a real ticket, and, when a Grafana token is configured, posts a success or failure annotation so a change in the graphs lines up with the release that caused it.
+
 ## Load test results
 
 Every run targets production and ends with `loadtest_verify`, which runs up to 13 checks on stock, holds, orders, payments, tickets, outbox, and dead letters straight from PostgreSQL. Scenarios and how to run them are in [loadtest/README.md](./loadtest/README.md).
