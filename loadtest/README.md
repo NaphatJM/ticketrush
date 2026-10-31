@@ -37,6 +37,20 @@ python manage.py seed_loadtest --scenario flash --opens-in 420   # prints LOADTE
 
 Locust sends `BFF-Secret` and a distinct `BFF-Client-IP` per buyer, as the Vercel BFF does, so the per-IP throttles see 1,000 clients instead of one machine. If the secret is wrong the API ignores the client IP: sign-in hits the 30/min per-IP limit, and the flash sale summary shows far fewer `buyers_finished` than buyers.
 
+## Run everything
+
+`run_all.sh` runs P1, the journey, and R1 to R6 in sequence from Git Bash or any POSIX shell, in about 80 minutes. It reads `.env.loadtest`, reaches production through `railway ssh` (link the project with `railway link` first), seeds an event per run, sets and resets the gateway faults, samples saturation on `worker-bulk`, and runs `loadtest_verify` after each run. Remote commands are retried 5 times over about 5 minutes, a run stops when it cannot seed or set faults, and faults are reset on exit, even after Ctrl+C. While R3 to R6 run, real buyers on production see the same faults.
+
+```bash
+bash run_all.sh check              # read-only: Locust, SSH to web and worker-bulk, current faults
+bash run_all.sh                    # every run; results in results/<date>_<time>/
+bash run_all.sh r5 r6              # only the named runs: p1 journey r1 r2 r3 r4 r5 r6
+bash run_all.sh --cleanup [runs]   # the same, then purge_mockdata and seed_mockdata
+bash run_all.sh reset              # set every fault back to 0
+```
+
+`summary.txt` lists each run's Locust and verify exit codes. Locust exits 1 on any failed request, so R3 to R5 exit 1 by design; judge them by the table below and the verify JSON.
+
 ## Runs
 
 Keep each run under 10 minutes; Railway bills CPU time. Write results to `results/<date>/`, which git ignores.
@@ -81,8 +95,8 @@ Run the journey with 100 users, one fault at a time. Set faults in the admin und
 | R1 | Duplicate webhook rate 0.5 | No extra tickets; `loadtest_verify` passes |
 | R2 | `LOADTEST_REPLAY_RATE=0.3` | Every `REPLAY` entry succeeds; stock is taken once per hold |
 | R3 | Charge error rate 1.0 with charge latency 2,000 ms | Checkout fails with `503 PAYMENTS_UNAVAILABLE`. Each failed checkout makes 2 gateway calls; after 5 failed checkouts in one gunicorn worker its breaker opens and checkout fails without waiting for the gateway. 30 s after the last failure one trial call goes through, and the breaker closes when a trial succeeds |
-| R4 | Charge latency above the 5 s gateway timeout | A checkout fails after 2 attempts of 5 s each and holds one of the 8 gunicorn threads meanwhile, so latency rises across the API until the breaker opens. No payment has two successful charges |
-| R5 | Dropped webhook rate 0.2 | Those orders expire with their holds and the stock returns; `charges_succeeded_unrecorded` counts them. Known gap: there is no reconcile job, so a payment whose webhook is lost is not recovered |
+| R4 | Charge latency above the 5 s gateway timeout | A checkout fails after 2 attempts of 5 s each and holds a gunicorn thread meanwhile, so latency rises across the API until the breaker opens. No payment has two successful charges |
+| R5 | Dropped webhook rate 0.2 | The reconcile job pays those orders within about 90 s of payment, taking the stock back if the hold expired meanwhile; `charges_succeeded_unrecorded` is 0, and `loadtest_verify` fails its `charges_recorded` check otherwise |
 | R6 | Restart `worker-critical` during R1 | Late-acked tasks are redelivered; every paid order still gets its tickets |
 
 ## Verify and sample
@@ -107,7 +121,7 @@ Run the sampler on a worker service rather than `web`, so it does not compete wi
 | Saturation: database connections, queue backlog, outbox, unprocessed webhooks | `loadtest_sample` CSV |
 | CPU, memory, network per service | Railway metrics for `web`, `worker-critical`, `worker-bulk`, Postgres, Redis; screenshot the run window |
 
-The API has 2 gunicorn workers with 4 threads each, so 8 requests run at once; queueing beyond that shows as latency, not as a separate metric. Latency includes the round trip from the Locust machine to Railway; record where Locust ran.
+The API runs `GUNICORN_WORKERS` processes with `GUNICORN_THREADS` threads each (default 2 x 4), so that many requests run at once; record both values with the results. Queueing beyond that shows as latency, not as a separate metric. Latency includes the round trip from the Locust machine to Railway; record where Locust ran.
 
 ## Clean up
 

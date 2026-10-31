@@ -1,9 +1,11 @@
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.functional import cached_property
 from drf_spectacular.utils import OpenApiParameter
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.utils import extend_schema_view
 from opentelemetry import metrics
+from rest_framework import serializers
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
@@ -54,6 +56,8 @@ IDEMPOTENCY_ERRORS_DESCRIPTION = (
 )
 
 
+SEARCH_MAX_LENGTH = 100
+
 SALE_STATUS_DESCRIPTION = (
     '`sale_status` is `upcoming`, `on_sale`, `sold_out`, or `closed`. `sold_out` can return to `on_sale` when unpaid holds expire. '
     '`available` is the live stock count; prices are in satang (1/100 THB).'
@@ -68,6 +72,11 @@ SALE_STATUS_DESCRIPTION = (
         parameters=[
             OpenApiParameter('status', str, enum=Event.SaleStatus.values, description='Only events in this sale status.'),
             OpenApiParameter('category', str, enum=Event.Category.values, description='Only events in this category.'),
+            OpenApiParameter(
+                'q',
+                str,
+                description=f'Only events whose title or venue name contains this text, ignoring case. At most {SEARCH_MAX_LENGTH} characters.',
+            ),
         ],
         responses={200: EventSerializer(many=True), 400: ERROR_RESPONSE},
     )
@@ -88,6 +97,12 @@ class EventListView(ListAPIView):
             if category not in Event.Category.values:
                 raise ValidationError({'category': [f'Must be one of: {", ".join(Event.Category.values)}.']})
             queryset = queryset.filter(category=category)
+        try:
+            search = serializers.CharField(max_length=SEARCH_MAX_LENGTH, allow_blank=True).run_validation(self.request.query_params.get('q', ''))
+        except ValidationError as exc:
+            raise ValidationError({'q': exc.detail}) from exc
+        if search:
+            queryset = queryset.filter(Q(title__icontains=search) | Q(venue_name__icontains=search))
         return queryset
 
     def get_serializer_context(self):

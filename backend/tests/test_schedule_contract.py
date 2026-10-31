@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from django.conf import settings
@@ -33,16 +34,31 @@ def test_every_scheduled_task_is_registered():
         assert entry['task'] in app.tasks, f'beat entry {name!r} points at an unregistered task'
 
 
+def test_beat_keeps_its_schedule_file_in_the_temp_directory_by_default():
+    schedule_file = Path(app.conf.beat_schedule_filename)
+
+    assert schedule_file.is_absolute()
+    assert schedule_file.parent == Path(tempfile.gettempdir())
+
+
 def test_retry_backoff_stays_below_the_visibility_timeout():
     assert RETRY_BACKOFF_MAX_SECONDS < settings.CELERY_BROKER_TRANSPORT_OPTIONS['visibility_timeout']
 
 
-def test_webhook_delivery_runs_on_bulk_and_payment_processing_on_critical():
+def test_webhook_delivery_runs_on_gateway_email_on_bulk_and_payment_processing_on_critical():
     router = app.amqp.router
 
-    assert router.route({}, 'mockgateway.deliver_webhook')['queue'].name == 'bulk'
+    assert router.route({}, 'mockgateway.deliver_webhook')['queue'].name == 'gateway'
     assert router.route({}, 'payments.process_succeeded')['queue'].name == 'critical'
     assert router.route({}, 'notify.send_ticket_email')['queue'].name == 'bulk'
+
+
+def test_payments_are_reconciled_on_critical_at_least_every_minute():
+    entry = settings.CELERY_BEAT_SCHEDULE['reconcile-payments']
+
+    assert entry['task'] == 'payments.reconcile'
+    assert entry['options']['queue'] == 'critical'
+    assert 30 <= entry['schedule'] <= 60
 
 
 def test_a_fresh_web_process_can_publish_every_outbox_topic():

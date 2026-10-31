@@ -1,3 +1,6 @@
+import tempfile
+from pathlib import Path
+
 from .base import REDIS_URL
 from .base import TIME_ZONE
 from .base import configs
@@ -23,8 +26,9 @@ CELERY_TASK_DEFAULT_QUEUE = 'critical'
 CELERY_TASK_DEFAULT_EXCHANGE = 'critical'
 CELERY_TASK_DEFAULT_ROUTING_KEY = 'critical'
 
+# Webhook delivery confirms payments, so it stays off `bulk`, where rate-limited emails can hold every prefetch slot.
 CELERY_TASK_ROUTES = {
-    'mockgateway.*': {'queue': 'bulk'},
+    'mockgateway.*': {'queue': 'gateway'},
     'notify.*': {'queue': 'bulk'},
 }
 
@@ -39,8 +43,12 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
 CELERY_TASK_ALWAYS_EAGER = configs.bool('CELERY_TASK_ALWAYS_EAGER', default=False)
 CELERY_TASK_EAGER_PROPAGATES = True
 
+# The image runs as a user that cannot write to /app, and beat exits when it cannot create this file.
+CELERY_BEAT_SCHEDULE_FILENAME = str(Path(tempfile.gettempdir()) / 'celerybeat-schedule')
+
 CELERY_BEAT_SCHEDULE: dict[str, dict] = {
     'relay-outbox': {'task': 'outbox.relay', 'schedule': 2.0, 'options': {'queue': 'critical', 'expires': 2}},
     'expire-holds': {'task': 'holds.expire_sweeper', 'schedule': 30.0, 'options': {'queue': 'critical', 'expires': 30}},
+    'reconcile-payments': {'task': 'payments.reconcile', 'schedule': 30.0, 'options': {'queue': 'critical', 'expires': 30}},
     'flush-expired-tokens': {'task': 'accounts.flush_expired_tokens', 'schedule': 86400.0, 'options': {'queue': 'bulk', 'expires': 3600}},
 }

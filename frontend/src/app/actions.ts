@@ -3,15 +3,17 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import type { ActionResult } from "@/lib/action-result";
+import type { ActionError, ActionResult } from "@/lib/action-result";
 import { api, ApiError, clientIp } from "@/lib/api";
 import { apiRequest } from "@/lib/api-core";
+import { FLASH_COOKIE, type FlashKind } from "@/lib/flash";
+import { authFieldErrors, describeError, type AuthField } from "@/lib/messages";
 import { SESSION_COOKIE, sealSession, sessionCookieOptions } from "@/lib/session";
 import type { Hold, Order, User } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function failure(error: unknown): { ok: false; error: { code: string; message: string; cid: string | null } } {
+function failure(error: unknown): { ok: false; error: ActionError } {
   if (error instanceof ApiError) {
     return { ok: false, error: { code: error.code, message: error.message, cid: error.cid } };
   }
@@ -28,7 +30,29 @@ async function startSession(access: string, refresh: string, user: User) {
   (await cookies()).set(SESSION_COOKIE, sealSession({ access, refresh, user }), sessionCookieOptions);
 }
 
-export type FormState = { error?: { code: string; message: string; cid: string | null } } | undefined;
+async function setFlash(kind: FlashKind) {
+  (await cookies()).set(FLASH_COOKIE, `${kind}.${crypto.randomUUID()}`, {
+    path: "/",
+    maxAge: 60,
+    sameSite: "lax",
+    secure: sessionCookieOptions.secure,
+  });
+}
+
+export type FormState =
+  | {
+      error?: ActionError;
+      fieldErrors?: Partial<Record<AuthField, string>>;
+      emailTaken?: boolean;
+      values?: { username: string; email: string };
+    }
+  | undefined;
+
+// React resets the form after an action, so a failed submit hands back what the user typed (never the password).
+function submitted(form: FormData) {
+  const text = (name: string) => (typeof form.get(name) === "string" ? (form.get(name) as string) : "");
+  return { username: text("username"), email: text("email") };
+}
 
 export async function login(_state: FormState, form: FormData): Promise<FormState> {
   const ip = await clientIp();
@@ -41,7 +65,10 @@ export async function login(_state: FormState, form: FormData): Promise<FormStat
     const { body: user } = await apiRequest<User>("/api/auth/me/", { token: tokens.access, clientIp: ip });
     await startSession(tokens.access, tokens.refresh, user);
   } catch (error) {
-    return failure(error);
+    if (error instanceof ApiError && error.httpStatus === 401) {
+      return { error: { code: "INVALID_CREDENTIALS", message: error.message, cid: error.cid }, values: submitted(form) };
+    }
+    return { error: failure(error).error, values: submitted(form) };
   }
   redirect(safeNext(form.get("next")));
 }
@@ -54,14 +81,25 @@ export async function register(_state: FormState, form: FormData): Promise<FormS
       clientIp: await clientIp(),
     });
     await startSession(body.access, body.refresh, body.user);
+    await setFlash("registered");
   } catch (error) {
-    return failure(error);
+    if (error instanceof ApiError) {
+      const values = submitted(form);
+      if (error.code === "USERNAME_TAKEN") return { fieldErrors: { username: describeError(error.code).message }, values };
+      if (error.code === "EMAIL_TAKEN") return { fieldErrors: { email: describeError(error.code).message }, emailTaken: true, values };
+      if (error.code === "BAD_REQUEST") {
+        const fieldErrors = authFieldErrors(error.message);
+        if (Object.keys(fieldErrors).length > 0) return { fieldErrors, values };
+      }
+    }
+    return { error: failure(error).error, values: submitted(form) };
   }
   redirect(safeNext(form.get("next")));
 }
 
 export async function logout() {
   (await cookies()).delete(SESSION_COOKIE);
+  await setFlash("signed_out");
   redirect("/");
 }
 
@@ -106,5 +144,5 @@ export async function payCharge(chargeId: string, orderUuid: string, outcome: "s
   } catch (error) {
     return failure(error);
   }
-  redirect(`/orders/${orderUuid}`);
+  redirect(`/orders/${orderUuid}?from=pay`);
 }

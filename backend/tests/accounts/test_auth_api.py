@@ -3,6 +3,8 @@ from unittest import mock
 import jwt
 import pytest
 from django.conf import settings
+from django.db import IntegrityError
+from django.db import transaction
 from redis.exceptions import ConnectionError as RedisConnectionError
 from rest_framework.test import APIClient
 
@@ -80,6 +82,32 @@ def test_register_rejects_a_taken_username():
     assert response.status_code == 409
     assert response.json()['status']['code'] == 'USERNAME_TAKEN'
     assert not ActivityLog.objects.filter(verb='user.registered').exists()
+
+
+@pytest.mark.parametrize('email', ['alice@example.com', 'Alice@Example.COM'])
+def test_register_rejects_an_email_that_already_has_an_account(email):
+    make_user(username='first', email='alice@example.com')
+
+    response = _register(username='second', email=email)
+
+    assert response.status_code == 409
+    assert response.json()['status'] == {'code': 'EMAIL_TAKEN', 'message': 'This email already has an account.'}
+    assert not User.objects.filter(username='second').exists()
+    assert not ActivityLog.objects.filter(verb='user.registered').exists()
+
+
+def test_accounts_without_an_email_do_not_conflict():
+    make_user(username='mock-buyer-1', email='')
+    make_user(username='mock-buyer-2', email='')
+
+    assert User.objects.filter(email='').count() == 2
+
+
+def test_the_database_rejects_an_email_that_differs_only_in_case():
+    make_user(username='first', email='alice@example.com')
+
+    with pytest.raises(IntegrityError), transaction.atomic():
+        make_user(username='second', email='ALICE@example.com')
 
 
 def test_login_returns_a_token_pair():

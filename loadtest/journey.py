@@ -17,9 +17,17 @@ from common import record
 from common import think
 
 PAY_TIMEOUT_SECONDS = float(os.environ.get('LOADTEST_PAY_TIMEOUT_SECONDS', '60'))
-POLL_SECONDS = 1.5
 # Share of holds and checkouts sent twice with the same Idempotency-Key, as a client does after a lost response.
 REPLAY_RATE = float(os.environ.get('LOADTEST_REPLAY_RATE', '0'))
+
+
+def poll_delay_seconds(attempt: int) -> float:
+    """Same backoff as the order page: 1.5 s, then 3 s, then 5 s."""
+    if attempt < 4:
+        return 1.5
+    if attempt < 8:
+        return 3.0
+    return 5.0
 
 
 class JourneyBuyer(Buyer):
@@ -144,13 +152,15 @@ class JourneyBuyer(Buyer):
     def _wait_for(self, order_uuid: str, status: str) -> None:
         """Poll as the order page does; the webhook task pays the order and issues its tickets in the background."""
         deadline = time.monotonic() + PAY_TIMEOUT_SECONDS
+        attempt = 0
         while True:
             order = self._expect('order: poll', self.call('GET', f'/api/orders/{order_uuid}/', name='order: poll'))
             if order['status'] == status:
                 return
             if time.monotonic() > deadline:
                 raise ApiError(f'order still {order["status"]}, wanted {status}', ApiResult(0, 'TIMEOUT', order, {}))
-            gevent.sleep(POLL_SECONDS)
+            gevent.sleep(poll_delay_seconds(attempt))
+            attempt += 1
 
     @staticmethod
     def _expect(step: str, result) -> dict:

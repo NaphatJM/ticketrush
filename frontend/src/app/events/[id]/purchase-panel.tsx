@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { toast } from "sonner";
 
 import { checkout, holdTickets, releaseHold } from "@/app/actions";
 import { ErrorNote } from "@/components/error-note";
 import type { ActionError } from "@/lib/action-result";
 import { formatBaht } from "@/lib/format";
+import { routeActionError } from "@/lib/notify";
 import type { Hold, SaleStatus } from "@/lib/types";
 
 const CHECKOUT_MIN_LEFT_MS = 60_000;
@@ -33,6 +35,17 @@ function readStoredHold(eventUuid: string): Hold | null {
   } catch {
     return null;
   }
+}
+
+function holdEndingToastId(holdUuid: string) {
+  return `hold-ending:${holdUuid}`;
+}
+
+function heldMessage(hold: Hold): string {
+  const tickets = `${hold.quantity} ${hold.quantity === 1 ? "ticket" : "tickets"} held.`;
+  const minutes = Math.floor((new Date(hold.expires_at).getTime() - Date.now()) / 60_000);
+  if (minutes < 1) return `${tickets} Less than a minute is left to pay.`;
+  return `${tickets} You have ${minutes} ${minutes === 1 ? "minute" : "minutes"} to pay.`;
 }
 
 function storeHold(eventUuid: string, hold: Hold | null) {
@@ -67,6 +80,18 @@ export function PurchasePanel({ eventUuid, saleStatus, saleOpensAt, maxQuantity,
 
   const remaining = hold ? new Date(hold.expires_at).getTime() - now : 0;
   const expired = hold !== null && remaining <= 0;
+  const tooLate = hold !== null && !expired && remaining < CHECKOUT_MIN_LEFT_MS;
+  const warnedHold = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!tooLate || !hold || warnedHold.current === hold.uuid) return;
+    warnedHold.current = hold.uuid;
+    toast.warning("Less than a minute left on your hold. That is too little to pay, so release it and hold again.", { id: holdEndingToastId(hold.uuid) });
+  }, [tooLate, hold]);
+
+  useEffect(() => {
+    if (expired && hold) toast.dismiss(holdEndingToastId(hold.uuid));
+  }, [expired, hold]);
 
   function onHold() {
     holdKey.current ??= crypto.randomUUID();
@@ -76,9 +101,10 @@ export function PurchasePanel({ eventUuid, saleStatus, saleOpensAt, maxQuantity,
       const result = await holdTickets(eventUuid, quantity, key);
       holdKey.current = null;
       if (!result.ok) {
-        setError(result.error);
+        setError(routeActionError(result.error));
         return;
       }
+      toast.success(heldMessage(result.data));
       setHold(result.data);
       setNow(Date.now());
       storeHold(eventUuid, result.data);
@@ -95,7 +121,7 @@ export function PurchasePanel({ eventUuid, saleStatus, saleOpensAt, maxQuantity,
       const result = await checkout(hold.uuid, key);
       checkoutKey.current = null;
       if (!result.ok) {
-        setError(result.error);
+        setError(routeActionError(result.error));
         return;
       }
       storeHold(eventUuid, null);
@@ -109,9 +135,10 @@ export function PurchasePanel({ eventUuid, saleStatus, saleOpensAt, maxQuantity,
     startTransition(async () => {
       const result = await releaseHold(hold.uuid);
       if (!result.ok && result.error.code !== "HOLD_NOT_ACTIVE") {
-        setError(result.error);
+        setError(routeActionError(result.error));
         return;
       }
+      toast.dismiss(holdEndingToastId(hold.uuid));
       setHold(null);
       storeHold(eventUuid, null);
       router.refresh();
@@ -127,7 +154,6 @@ export function PurchasePanel({ eventUuid, saleStatus, saleOpensAt, maxQuantity,
   if (hold && !expired) {
     const minutes = Math.floor(remaining / 60_000);
     const seconds = Math.floor((remaining % 60_000) / 1000);
-    const tooLate = remaining < CHECKOUT_MIN_LEFT_MS;
     return (
       <div className="space-y-4">
         <div className="rounded-xl bg-ink p-4 text-paper">
@@ -139,9 +165,8 @@ export function PurchasePanel({ eventUuid, saleStatus, saleOpensAt, maxQuantity,
           </p>
           <p className="text-sm opacity-80">Total {formatBaht(priceSatang * hold.quantity)}</p>
         </div>
-        {tooLate && <p className="text-sm text-warn">Less than a minute left, which is too little to pay. Release it and hold again.</p>}
         <button type="button" className="btn btn-primary w-full" onClick={onCheckout} disabled={pending || tooLate}>
-          {pending ? "Working..." : "Continue to payment"}
+          {pending ? "Working..." : tooLate ? "Too little time left to pay" : "Continue to payment"}
         </button>
         <button type="button" className="btn btn-ghost w-full" onClick={onRelease} disabled={pending}>
           Release tickets

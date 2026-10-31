@@ -1,11 +1,16 @@
 import logging
 import time
+from collections import Counter
 from collections.abc import Mapping
 from datetime import timedelta
 
 from django.db import IntegrityError
 from django.db import transaction
+from django.db.models import Case
 from django.db.models import F
+from django.db.models import Q
+from django.db.models import Value
+from django.db.models import When
 from django.utils import timezone
 from opentelemetry import metrics
 from rest_framework.exceptions import NotFound
@@ -28,6 +33,7 @@ from .gateways import get_webhook_gateway
 from .gateways.base import CHARGE_FAILED
 from .gateways.base import CHARGE_SUCCEEDED
 from .gateways.base import Charge
+from .gateways.base import ChargeStatus
 from .gateways.base import GatewayUnavailableError
 from .gateways.base import InvalidWebhookError
 from .models import Payment
@@ -45,6 +51,15 @@ GATEWAY_ATTEMPTS = 2
 
 gateway_breaker = CircuitBreaker(failure_threshold=5, reset_after_seconds=30)
 
+# Open payments untouched this long are asked about; a webhook normally lands within seconds.
+RECONCILE_MIN_AGE = timedelta(seconds=60)
+RECONCILE_RECHECK_AFTER = timedelta(minutes=2)
+RECONCILE_HORIZON = timedelta(hours=1)
+RECONCILE_BATCH_SIZE = 100
+# Budget plus one lookup must stay well below the 30 s beat interval: a run holds a worker-critical process that also issues tickets.
+RECONCILE_LOOKUP_TIMEOUT_SECONDS = 2.0
+RECONCILE_RUN_BUDGET_SECONDS = 10.0
+
 _meter = metrics.get_meter(__name__)
 gateway_charges = _meter.create_counter(
     'ticketrush.gateway.charges', unit='{call}', description='Charge calls by outcome: ok, error, or circuit_open.'
@@ -60,6 +75,7 @@ webhooks_received = _meter.create_counter(
 )
 
 _TOPICS = {CHARGE_SUCCEEDED: 'payments.process_succeeded', CHARGE_FAILED: 'payments.process_failed'}
+_SETTLED = {ChargeStatus.SUCCEEDED: CHARGE_SUCCEEDED, ChargeStatus.FAILED: CHARGE_FAILED}
 _OPEN_PAYMENT = (Payment.Status.CREATED, Payment.Status.PENDING)
 
 
@@ -118,6 +134,11 @@ def _create_charge(payment: Payment) -> Charge:
             _record_charge(gateway.provider, 'error', started)
             logger.warning('gateway charge failed', extra={'attempt': attempt, 'provider': gateway.provider}, exc_info=exc)
             continue
+        except Exception:
+            _record_charge(gateway.provider, 'error', started)
+            # Ends a half-open trial; otherwise the breaker would refuse every later call in this process.
+            gateway_breaker.record_failure()
+            raise
         _record_charge(gateway.provider, 'ok', started)
         gateway_breaker.record_success()
         return charge
@@ -143,25 +164,88 @@ def receive_webhook(*, provider: str, body: bytes, headers: Mapping[str, str]) -
         webhooks_received.add(1, {'provider': provider, 'result': 'rejected'})
         raise InvalidWebhookSignature from exc
 
+    stored = _store_event(
+        provider=provider, event_id=notice.event_id, event_type=notice.event_type, payment_key=notice.payment_key, payload=notice.payload
+    )
+    if not stored:
+        logger.info('duplicate webhook ignored', extra={'provider': provider, 'webhook_event_id': notice.event_id})
+    webhooks_received.add(1, {'provider': provider, 'result': 'accepted' if stored else 'duplicate'})
+    return stored
+
+
+def _store_event(*, provider: str, event_id: str, event_type: str, payment_key: str, payload: dict) -> bool:
+    """Insert the event once and queue its processing in the same transaction; returns False if the event was already stored."""
     with transaction.atomic():
         try:
             with transaction.atomic():
                 event = WebhookEvent.objects.create(
-                    provider=provider,
-                    provider_event_id=notice.event_id,
-                    event_type=notice.event_type,
-                    payment_key=notice.payment_key,
-                    payload=notice.payload,
+                    provider=provider, provider_event_id=event_id, event_type=event_type, payment_key=payment_key, payload=payload
                 )
         except IntegrityError:
-            logger.info('duplicate webhook ignored', extra={'provider': provider, 'webhook_event_id': notice.event_id})
-            webhooks_received.add(1, {'provider': provider, 'result': 'duplicate'})
             return False
-        topic = _TOPICS.get(notice.event_type)
+        topic = _TOPICS.get(event_type)
         if topic is not None:
             outbox.enqueue(topic, {'webhook_event_id': event.pk})
-    webhooks_received.add(1, {'provider': provider, 'result': 'accepted'})
     return True
+
+
+def reconcile_payments(*, batch_size: int = RECONCILE_BATCH_SIZE) -> dict[str, int]:
+    """Ask the gateway about open payments whose webhook is overdue, and record each settled charge as its webhook would.
+
+    A lookup that fails changes nothing; the payment is asked about again on a later run.
+    """
+    now = timezone.now()
+    gateway = get_gateway()
+    batch = list(
+        Payment.objects.filter(
+            provider=gateway.provider,
+            status__in=_OPEN_PAYMENT,
+            updated_on__lt=now - RECONCILE_MIN_AGE,
+            expires_at__gt=now - RECONCILE_HORIZON,
+        )
+        .filter(Q(reconciled_at__isnull=True) | Q(reconciled_at__lt=now - RECONCILE_RECHECK_AFTER))
+        # A lost webhook leaves a payment pending; created payments rarely have a charge, so they get what is left of the batch.
+        .order_by(Case(When(status=Payment.Status.PENDING, then=Value(0)), default=Value(1)), 'expires_at', 'id')[:batch_size]
+    )
+    outcomes: Counter[str] = Counter()
+    deadline = time.monotonic() + RECONCILE_RUN_BUDGET_SECONDS
+    for payment in batch:
+        if time.monotonic() > deadline:
+            outcomes['deferred'] += 1
+            continue
+        if not gateway_breaker.allow():
+            outcomes['circuit_open'] += 1
+            continue
+        try:
+            status = gateway.retrieve_charge(idempotency_key=str(payment.uuid), timeout=RECONCILE_LOOKUP_TIMEOUT_SECONDS)
+        except GatewayUnavailableError as exc:
+            gateway_breaker.record_failure()
+            logger.warning('gateway charge lookup failed', extra={'payment_id': str(payment.uuid), 'provider': gateway.provider}, exc_info=exc)
+            outcomes['unavailable'] += 1
+            continue
+        except Exception:
+            # Ends a half-open trial; otherwise the breaker would refuse every later lookup in this process.
+            gateway_breaker.record_failure()
+            raise
+        gateway_breaker.record_success()
+        Payment.objects.filter(pk=payment.pk).update(reconciled_at=timezone.now())
+        if status not in _SETTLED:
+            outcomes[status.value] += 1
+            continue
+        # The event takes the webhook's path, so a real webhook for the same charge, earlier or later, ends as a duplicate.
+        stored = _store_event(
+            provider=payment.provider,
+            event_id=f'reconcile:{payment.uuid}',
+            event_type=_SETTLED[status],
+            payment_key=str(payment.uuid),
+            payload={'source': 'reconcile', 'status': str(status), 'payment': str(payment.uuid)},
+        )
+        outcomes[status.value if stored else 'duplicate'] += 1
+        if stored:
+            logger.warning('payment settled by reconcile', extra={'payment_id': str(payment.uuid), 'charge_status': str(status)})
+    if outcomes:
+        logger.info('payments reconciled', extra={'outcomes': dict(outcomes)})
+    return dict(outcomes)
 
 
 def apply_charge_succeeded(*, webhook_event_id: int) -> str:

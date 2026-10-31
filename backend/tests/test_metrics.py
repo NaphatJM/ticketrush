@@ -159,7 +159,7 @@ def test_queue_lengths_include_the_priority_lists():
     broker = mock.Mock(llen=lambda key: lengths.get(key, 0))
 
     with mock.patch.object(system_metrics, '_broker', return_value=broker):
-        assert _observe(system_metrics.queue_lengths) == [(3, {'queue': 'critical'}), (4, {'queue': 'bulk'})]
+        assert _observe(system_metrics.queue_lengths) == [(3, {'queue': 'critical'}), (0, {'queue': 'gateway'}), (4, {'queue': 'bulk'})]
 
 
 def test_beat_publish_age_restarts_when_beat_sends_a_task():

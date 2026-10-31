@@ -14,6 +14,7 @@ from payments.exceptions import HoldExpiringSoon
 from payments.exceptions import OrderNotPayable
 from payments.exceptions import PaymentsUnavailable
 from payments.models import Payment
+from reliability.circuit import CircuitBreaker
 from reliability.services import PENDING_LEASE
 from tests.builders import make_event
 from tests.builders import make_hold
@@ -138,3 +139,16 @@ def test_a_paid_order_cannot_be_checked_out_again():
 
 def test_the_gateway_timeouts_fit_inside_the_idempotency_lease():
     assert services.GATEWAY_TIMEOUT_SECONDS * services.GATEWAY_ATTEMPTS < PENDING_LEASE.total_seconds()
+
+
+def test_an_unexpected_charge_error_is_raised_and_does_not_leave_the_circuit_stuck():
+    hold = make_hold()
+    breaker = CircuitBreaker(failure_threshold=1, reset_after_seconds=0)
+    breaker.record_failure()
+
+    with mock.patch.object(services, 'gateway_breaker', breaker):
+        with mock.patch('payments.gateways.mock.MockGateway.create_charge', side_effect=RuntimeError('bug')), pytest.raises(RuntimeError):
+            services.submit_charge(services.prepare_checkout(user=hold.user, hold_uuid=hold.uuid))
+        payment = services.submit_charge(services.prepare_checkout(user=hold.user, hold_uuid=hold.uuid))
+
+    assert payment.status == Payment.Status.PENDING

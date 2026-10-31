@@ -40,8 +40,8 @@ uv run python manage.py runserver
 | --- | --- |
 | `uv run pytest` | Run the test suite against the local PostgreSQL and Redis |
 | `uv run ruff check . && uv run ruff format --check .` | Lint and format check |
-| `uv run celery -A ticketrush worker -Q critical,bulk -l info` | Run a Celery worker (add `--pool=solo` on Windows) |
-| `uv run celery -A ticketrush beat -l info` | Run the scheduler for the outbox relay, hold sweeper, and token cleanup |
+| `uv run celery -A ticketrush worker -Q critical,gateway,bulk -l info` | Run a Celery worker (add `--pool=solo` on Windows) |
+| `uv run celery -A ticketrush beat -l info` | Run the scheduler for the outbox relay, hold sweeper, payment reconcile, and token cleanup |
 | `uv run python manage.py seed_mockdata [--buyers N]` | Create the demo catalog (14 small and medium events in every sale status) and optional load-test buyers `mock-buyer-00001`...; safe to rerun |
 | `uv run python manage.py purge_mockdata [--dry-run]` | Delete the demo catalog with everything bought on it and the mock users, for a clean load-test run |
 
@@ -74,3 +74,24 @@ pnpm dev                             # http://localhost:3000
 | `pnpm build` | Production build |
 
 Environment variables are listed in [frontend/.env.example](./frontend/.env.example). `BFF_SHARED_SECRET` must match `DJANGO_BFF_SHARED_SECRET` on the API, or every buyer is throttled under the frontend server's IP.
+
+### Smoke test
+
+```bash
+python scripts/smoke_test.py [--api URL] [--event UUID]
+```
+
+Buys one ticket end to end against a live API (production by default): register, hold with a key replay, checkout, mock payment, and the ticket. It needs only the Python standard library and exits 1 on the first failed step. Each run leaves a user and a paid one-ticket order, so pass `--event` with a mock event to keep real events' stock.
+
+### Deploy
+
+Pushes to `main` deploy through `.github/workflows/deploy.yml` once CI passes: `web` first (its pre-deploy command runs the migrations), then `worker-critical`, `worker-bulk`, and `beat`, each waited on until Railway reports it live, then a readiness wait and the smoke test. Railway autodeploy stays disabled on every service so a push deploys once.
+
+| GitHub setting | Purpose |
+| --- | --- |
+| `RAILWAY_TOKEN` (secret) | Railway project token for the production environment |
+| `GRAFANA_ANNOTATION_TOKEN` (secret, optional) | Grafana service account token; without it the annotation step is skipped |
+| `GRAFANA_URL` (variable, optional) | Grafana stack URL, such as `https://<stack>.grafana.net` |
+| `SMOKE_EVENT_UUID` (variable, optional) | Event the post-deploy smoke test buys from; point it at a mock event to keep real events' stock |
+
+Roll back by redeploying the previous deployment in Railway.
