@@ -3,6 +3,8 @@ import logging
 from datetime import UTC
 from datetime import datetime
 
+from opentelemetry import trace
+
 
 _RESERVED = frozenset(logging.LogRecord(name='', level=0, pathname='', lineno=0, msg='', args=(), exc_info=None).__dict__) | {
     'message',
@@ -35,6 +37,10 @@ class JsonFormatter(logging.Formatter):
             'line': record.lineno,
             'msg': record.getMessage(),
         }
+        span_context = trace.get_current_span().get_span_context()
+        if span_context.is_valid:
+            payload['trace_id'] = trace.format_trace_id(span_context.trace_id)
+            payload['span_id'] = trace.format_span_id(span_context.span_id)
         celery_current = getattr(record, 'celery_current_id', None)
         if celery_current:
             payload['celery_current_id'] = celery_current

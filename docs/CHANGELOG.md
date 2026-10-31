@@ -76,6 +76,11 @@ All notable changes to TicketRush are documented here. The format follows
 - Add Locust load tests in `loadtest/`: a 1,000-buyer flash sale, weighted user journeys, and reliability runs under mock gateway faults. Locust sends BFF headers so per-IP throttles see one client per buyer.
 - Add `loadtest/run_all.sh`, which runs every load test scenario against production in one go: it seeds each run, sets and resets the gateway faults, samples saturation, and verifies the invariants.
 - Add the `seed_loadtest`, `loadtest_verify`, and `loadtest_sample` management commands: a purge-able event per run, a read-only stock and ticket invariant check that exits 1 on failure, and CSV readings of database connections and queue backlogs.
+- Add OpenTelemetry export over OTLP/HTTP, enabled by `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS`:
+  - Traces for Django, PostgreSQL, Redis, Celery, and outgoing HTTP. Request spans carry the `cid`, and the context travels into Celery tasks and the mock gateway's webhook.
+  - Logs exported over OTLP with the `cid`. JSON log lines gain `trace_id` and `span_id`.
+  - Metrics: hold requests by result, gateway charges by outcome with latency, webhooks by result, and task outcomes including dead letters. Beat also reports queue lengths, outbox backlog and age, pending dead letters, unprocessed webhooks, stock per event on sale by event UUID, and seconds since it last sent a task.
+  - Each gunicorn worker, Celery pool process, and beat starts its exporters after fork. Health and readiness probes are not traced, and export failures are logged to stdout.
 - Add `scripts/smoke_test.py`, which buys one ticket end to end against a live API and exits 1 on the first failed step.
 - Add the payment reconcile job: `payments.reconcile` runs every 30 seconds on `critical`, asks the gateway for the status of open payments untouched for 60 seconds, and records each settled charge as a webhook event, so a lost webhook still pays the order and issues its tickets. Lookups have a timeout, go through the gateway circuit breaker, and change nothing when they fail. Deploy: apply migration `payments/0002` before the new workers start, since they read `payments.reconciled_at`.
 - `loadtest_verify` fails its new `charges_recorded` check when the gateway settled a charge that no payment recorded.
