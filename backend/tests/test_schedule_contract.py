@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from django.conf import settings
@@ -31,6 +32,13 @@ def test_every_scheduled_task_is_registered():
 
     for name, entry in settings.CELERY_BEAT_SCHEDULE.items():
         assert entry['task'] in app.tasks, f'beat entry {name!r} points at an unregistered task'
+
+
+def test_beat_keeps_its_schedule_file_in_the_temp_directory_by_default():
+    schedule_file = Path(app.conf.beat_schedule_filename)
+
+    assert schedule_file.is_absolute()
+    assert schedule_file.parent == Path(tempfile.gettempdir())
 
 
 def test_retry_backoff_stays_below_the_visibility_timeout():

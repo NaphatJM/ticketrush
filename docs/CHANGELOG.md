@@ -94,3 +94,6 @@ All notable changes to TicketRush are documented here. The format follows
 - The PostgreSQL connection budget in `docs/fail-safe.md` counts every gunicorn thread and every Celery child, since each keeps its own connection.
 - The order page polls for payment every 1.5 s four times, then every 3 s four times, then every 5 s, for at least the same 2 minutes, and the journey load test polls on the same schedule. Order polls were 60% of journey requests.
 - The OpenAPI docs now describe each endpoint with its own summary, description, and tag, declare the `{status, data}` envelope and the paginated list shape that the API actually returns, and list the error responses and the `Idempotent-Replayed` header.
+
+### Fixed
+- Celery beat keeps its schedule file in the system temp directory, so it starts without a `--schedule` flag. The image runs as a user that cannot write to `/app`, and beat started without the flag exited on boot, so no periodic task ran: overdue holds stayed active and dropped webhooks were never reconciled.
